@@ -13,7 +13,6 @@ class Database {
 
   async init() {
     await fs.ensureDir(this.ConfigPath)
-    console.log('Ensured Dir', this.DbPath)
     this.db = new SimpleJsonDb(this.DbPath, { asyncWrite: true })
     if (!this.db.has('albums')) {
       this.db.set('albums', [

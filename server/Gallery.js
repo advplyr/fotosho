@@ -28,7 +28,7 @@ class Gallery {
 
   async checkGenThumbnails() {
     var photos_no_thumb = this.photos.filter(p => !p.thumbPath)
-    console.log('Check Gen', photos_no_thumb.length, 'Thumbnails')
+    console.log('Generating', photos_no_thumb.length, 'Thumbnails')
     this.isGeneratingThumbnails = true
     this.emitter('generating_thumbnails', { isGenerating: true })
     for (let i = 0; i < photos_no_thumb.length; i++) {
@@ -60,8 +60,6 @@ class Gallery {
           console.error('Invalid thumb data', thumb_data)
         }
 
-        // TEMP
-        // await new Promise((resolve) => setTimeout(resolve, 2500))
       } else {
         var new_thumbnail = await generateThumbnail(_photo_path, new_thumbnail_fullpath)
         if (!new_thumbnail) {
@@ -79,9 +77,6 @@ class Gallery {
           this.emitter('thumbnail_generated', _photo)
         }
         await this.database.save()
-
-        // TEMP
-        // await new Promise((resolve) => setTimeout(resolve, 2500))
       }
       if (this.forceStopGenerating) {
         console.error('Forcing stop generating')
@@ -105,12 +100,14 @@ class Gallery {
     })
     // console.log('Grouped Photos', groupedPhotos.length)
 
-    groupedPhotos.sort((a, b) => {
-      var valA = a[orderBy]
-      var valB = b[orderBy]
-      if (orderDesc) return valA < valB ? 1 : -1
-      return valB < valA ? 1 : -1
-    })
+    if (orderBy) {
+      groupedPhotos.sort((a, b) => {
+        var valA = a[orderBy]
+        var valB = b[orderBy]
+        if (orderDesc) return valA < valB ? 1 : -1
+        return valB < valA ? 1 : -1
+      })
+    }
 
     var album = filters.album || null
     var search = filters.search || null
@@ -147,7 +144,6 @@ class Gallery {
     start = isNaN(start) ? 0 : Number(start)
     var qty = req.query.qty
     qty = isNaN(qty) ? 25 : Number(qty)
-    // console.log('[FETCH]', start, qty)
     var photos = this.getPhotosFromQuery(req.query)
 
     var end = start + qty
@@ -170,12 +166,11 @@ class Gallery {
   }
 
   getAlbumCover(req, res) {
-    var placeholder = Path.resolve(global.appRoot, './client/static/Logo.png')
+    var placeholder = Path.resolve(global.appRoot, './static/Logo.png')
 
     var id = req.params.id
     var album = this.albums.find(a => String(a.id) === id)
     if (!album || !album.photos.length) {
-      console.error('Album not found')
       return res.sendFile(placeholder)
     }
     var photos_in_album = this.photos.filter(p => album.photos.includes(p.id))

@@ -12,6 +12,7 @@ COPY --from=build /client/dist /client/dist
 COPY index.js index.js
 COPY package.json package.json
 COPY server server
+COPY static static
 RUN npm install
 EXPOSE 80
 CMD ["node", "index.js"]

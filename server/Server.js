@@ -122,10 +122,11 @@ class Server {
         socket,
         connected_at: Date.now()
       }
+      var photosGrouped = this.gallery.getPhotosSortedFiltered({}, null, null)
       socket.emit('init', {
         albums: this.albums,
         scanning: this.scanner.isScanning,
-        num_photos: this.photos.length
+        num_photos: photosGrouped.length
       })
 
       socket.on('add_to_album', (data) => this.gallery.addToAlbum(socket, data))

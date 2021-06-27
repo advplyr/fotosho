@@ -1,7 +1,8 @@
 {
   "name": "fotosho",
   "version": "1.0.0",
-  "private": true,
+  "description": "Host your own web photo gallery to manage your home photos on your own server",
+  "private": false,
   "author": "mcoop320",
   "scripts": {
     "dev": "node index.js",
@@ -17,5 +18,12 @@
     "sharp": "^0.28.3",
     "simple-json-db": "^1.2.3",
     "socket.io": "^4.1.2"
-  }
+  },
+  "keywords": [
+    "slideshow",
+    "gallery",
+    "photos",
+    "photoshow",
+    "fotosho"
+  ]
 }
