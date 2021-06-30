@@ -2,17 +2,17 @@
   <div class="rounded-xl overflow-hidden cursor-pointer m-1.5 relative border" :class="selected ? 'border-yellowgreen' : 'border-transparent hover:border-gray-300'" :style="{ height: cardHeight + 'rem', width: cardWidth + 'rem', margin: cardMargin + 'rem' }">
     <img :id="thumbnailId" :src="path" loading="lazy" class="w-full h-full" />
 
-    <div v-if="isSocketConnected" class="w-full h-full bg-black absolute top-0 left-0" :class="bgClassList" @mouseenter="mouseenter" @mouseleave="mouseleave" @click="clickCard">
-      <div class="absolute top-1.5 left-1.5 hover:text-yellowgreen cursor-pointer" :class="radioClass" @click.prevent.stop="selectClick">
+    <div v-if="isSocketConnected" class="w-full h-full bg-black absolute top-0 left-0 cursor-pointer" :class="bgClassList" @mouseenter="mouseenter" @mouseleave="mouseleave" @click="clickCard">
+      <div class="absolute top-1.5 left-1.5 hover:text-yellowgreen" :class="radioClass" @click.prevent.stop="selectClick">
         <icon :icon="selected ? 'radioFilled' : 'radioEmpty'" />
       </div>
-      <div ref="star" class="absolute top-1.5 right-1.5 hover:text-yellowgreen cursor-pointer" :class="starClass" @click.stop.prevent="clickStar">
+      <div ref="star" class="absolute top-1.5 right-1.5 hover:text-yellowgreen" :class="starClass" @click.stop.prevent="clickStar">
         <icon icon="star" :fill="isStarred ? 'currentColor' : 'none'" :stroke-width="isStarred ? 1 : 2" />
       </div>
-      <div ref="pencil" class="absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen cursor-pointer" :class="editClass" @click.stop.prevent="editClicked">
+      <div ref="pencil" class="absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen" :class="editClass" @click.stop.prevent="editClicked">
         <icon icon="pencil" />
       </div>
-      <!-- <div ref="download" class="w-6 h-6 absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen cursor-pointer" :class="downloadClass" @click.stop.prevent="clickDownload">
+      <!-- <div ref="download" class="w-6 h-6 absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen" :class="downloadClass" @click.stop.prevent="clickDownload">
         <icon icon="download" />
       </div> -->
       <div v-if="numCopies > 1" class="absolute text-xs font-mono bottom-1.5 right-1.5 bg-black bg-opacity-50 rounded-sm leading-4 px-1" :class="copiesClass">

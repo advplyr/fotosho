@@ -1,5 +1,5 @@
 <template>
-  <div id="cards-wrapper" class="wrapper overflow-y-auto p-6 bg-bg" :class="isScanning ? 'scanning' : ''">
+  <div v-if="isInitialized" id="cards-wrapper" class="wrapper overflow-y-auto p-6 bg-bg">
     <div class="flex items-center mb-2">
       <p class="text-2xl mr-4">Albums</p>
       <div class="rounded-full text-sm px-2 font-mono bg-black bg-opacity-25">
@@ -32,29 +32,31 @@ export default {
     albums() {
       return this.$store.state.albums
     },
-    isScanning() {
-      return this.$store.state.isScanning
+    isInitialized() {
+      return this.$store.state.isInitialized
     }
   },
   methods: {
-    thumbnailGenerated(data) {
-      console.log('ThumbnailGenerated', data)
-      if (this.$refs.gallery) {
-        this.$refs.gallery.updateThumbnail(data)
-      } else {
-        console.error('Gallery ref not found')
+    thumbnailsGenerated(data) {
+      if (!this.$refs.gallery) {
+        console.error('Invalid gallery not there..')
+        return
       }
+      console.log('Thumbnails Generated', data)
+      data.photos.forEach((photo) => {
+        this.$refs.gallery.updateThumbnail(photo)
+      })
     }
   },
   mounted() {
     var socket = this.$root.socket
     if (!socket) return
-    socket.on('thumbnail_generated', this.thumbnailGenerated)
+    socket.on('thumbnails_generated', this.thumbnailsGenerated)
   },
   beforeDestroy() {
     var socket = this.$root.socket
     if (!socket) return
-    socket.off('thumbnail_generated', this.thumbnailGenerated)
+    socket.off('thumbnails_generated', this.thumbnailsGenerated)
   }
 }
 </script>

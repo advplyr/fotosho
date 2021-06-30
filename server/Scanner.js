@@ -1,12 +1,13 @@
 const Path = require('path')
-const { getAllImages, getImageStats, stringHash } = require('./utils/fileHelpers')
+const fs = require('fs-extra')
+const { getAllImages, getImageStats } = require('./utils/fileHelpers')
+const { stringHash } = require('./utils')
 
 class Scanner {
   constructor(PHOTO_PATH, THUMBNAIL_PATH, database) {
     this.PhotoPath = PHOTO_PATH
     this.ThumbnailPath = THUMBNAIL_PATH
     this.database = database
-    this.isScanning = false
   }
 
   get photos() {
@@ -38,7 +39,9 @@ class Scanner {
   }
 
   async scan() {
-    this.isScanning = true
+    await fs.ensureDir(this.PhotoPath)
+    await fs.ensureDir(this.ThumbnailPath)
+
     var photos_in_dir = await getAllImages(this.PhotoPath)
 
     var db_photo_paths = this.photos.map(p => p.path)
@@ -66,12 +69,9 @@ class Scanner {
     }
     this.database.photos = final_photos
     await this.database.save()
-
-    this.isScanning = false
   }
 
   async scanThumbnails() {
-    this.isScanning = true
     var thumbs_in_dir = await getAllImages(this.ThumbnailPath)
     var thumb_paths_in_dir = thumbs_in_dir.map(p => p.path)
 
@@ -94,7 +94,6 @@ class Scanner {
     if (removed_thumbs > 0) {
       await this.database.save()
     }
-    this.isScanning = false
   }
 
   async scanFile(path, fullPath) {

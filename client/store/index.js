@@ -1,11 +1,15 @@
 
 export const state = () => ({
+  photoPath: null,
+  configPath: null,
+  thumbnailPath: null,
   albums: [],
   numPhotos: 0,
   selectedPhotos: [],
   showAlbumModal: false,
   toasts: [],
   isScanning: false,
+  isInitialized: false,
   isSocketConnected: false
 })
 
@@ -29,6 +33,15 @@ export const actions = {
 }
 
 export const mutations = {
+  setInitialData(state, data) {
+    state.albums = data.albums
+    state.numPhotos = data.num_photos
+    state.photoPath = data.photoPath
+    state.thumbnailPath = data.thumbnailPath
+    state.configPath = data.configPath
+    state.isScanning = data.scanning
+    state.isInitialized = data.isInitialized
+  },
   setAlbums(state, albums) {
     state.albums = albums
   },
@@ -73,7 +86,6 @@ export const mutations = {
     state.isScanning = val
   },
   setSocketConnected(state, val) {
-    console.log('SET SOCKET CONNECTED', val)
     state.isSocketConnected = val
   }
 }

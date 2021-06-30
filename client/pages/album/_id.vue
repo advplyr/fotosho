@@ -26,9 +26,15 @@ export default {
     }
   },
   methods: {
-    thumbnailGenerated(data) {
-      console.log('ThumbnailGenerated', data)
-      this.$refs.gallery.updateThumbnail(data)
+    thumbnailsGenerated(data) {
+      if (!this.$refs.gallery) {
+        console.error('Invalid gallery not there..')
+        return
+      }
+      console.log('Thumbnails Generated', data)
+      data.photos.forEach((photo) => {
+        this.$refs.gallery.updateThumbnail(photo)
+      })
     },
     addedToAlbum(data) {
       console.log('Photo Added to Album', data)
@@ -52,7 +58,7 @@ export default {
       console.error('No Socket')
       return
     }
-    socket.on('thumbnail_generated', this.thumbnailGenerated)
+    socket.on('thumbnails_generated', this.thumbnailsGenerated)
     socket.on('added_to_album', this.addedToAlbum)
     socket.on('removed_from_album', this.removedFromAlbum)
     socket.on('album_deleted', this.albumDeleted)
@@ -63,7 +69,7 @@ export default {
       console.error('No Socket')
       return
     }
-    socket.off('thumbnail_generated', this.thumbnailGenerated)
+    socket.off('thumbnails_generated', this.thumbnailsGenerated)
     socket.off('added_to_album', this.addedToAlbum)
     socket.off('removed_from_album', this.removedFromAlbum)
     socket.off('album_deleted', this.albumDeleted)

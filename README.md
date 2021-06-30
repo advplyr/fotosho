@@ -6,7 +6,7 @@ Host your own web photo gallery to manage your home photos on your own server.
 * Does not require a database
 * Uses your photo directory, does not copy images
 
-<img alt="Screenshot" src="https://github.com/mcoop320/fotosho/raw/master/static/Screenshot1.png" />
+<img alt="Screenshot" src="https://github.com/advplyr/fotosho/raw/master/static/Screenshot1.png" />
 
 ## Docker
 

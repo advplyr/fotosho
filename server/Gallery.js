@@ -1,6 +1,7 @@
 const Path = require('path')
 const fs = require('fs-extra')
-const { stringHash, moveFile } = require('./utils/fileHelpers')
+const { moveFile } = require('./utils/fileHelpers')
+const { stringHash } = require('./utils')
 const { generateThumbnail, thumbnailStats } = require('./utils/thumbnails')
 
 class Gallery {
@@ -14,9 +15,6 @@ class Gallery {
 
     this.photosOrderBy = null
     this.photosOrderDesc = false
-
-    this.isGeneratingThumbnails = false
-    this.forceStopGenerating = false
   }
 
   get photos() {
@@ -24,68 +22,6 @@ class Gallery {
   }
   get albums() {
     return this.database.albums
-  }
-
-  async checkGenThumbnails() {
-    var photos_no_thumb = this.photos.filter(p => !p.thumbPath)
-    console.log('Generating', photos_no_thumb.length, 'Thumbnails')
-    this.isGeneratingThumbnails = true
-    this.emitter('generating_thumbnails', { isGenerating: true })
-    for (let i = 0; i < photos_no_thumb.length; i++) {
-      var _photo = photos_no_thumb[i]
-      var _photo_path = _photo.fullPath
-
-      var new_thumbnail_basename = `thumb-${_photo.basename}`
-      var new_thumbnail_path = `${Path.sep}${new_thumbnail_basename}.${this.ThumbnailFormat}`
-
-      var new_thumbnail_fullpath = Path.join(this.ThumbnailPath, new_thumbnail_path)
-      var exists = await fs.pathExists(new_thumbnail_fullpath)
-      if (exists) {
-        // console.warn(`Thumbnail already exists for ${_photo.path}. Pull stats.`)
-        var thumb_data = await thumbnailStats(new_thumbnail_fullpath)
-        if (thumb_data) {
-          _photo.thumbPath = new_thumbnail_path
-          _photo.thumb = {
-            fullPath: new_thumbnail_fullpath,
-            ext: this.ThumbnailFormat,
-            basename: new_thumbnail_basename,
-            size: thumb_data.size,
-            width: thumb_data.width,
-            height: thumb_data.height
-          }
-          console.log('Existing thumbnail added', _photo.thumbPath)
-          this.emitter('thumbnail_generated', _photo)
-          await this.database.save()
-        } else {
-          console.error('Invalid thumb data', thumb_data)
-        }
-
-      } else {
-        var new_thumbnail = await generateThumbnail(_photo_path, new_thumbnail_fullpath)
-        if (!new_thumbnail) {
-          console.log(`Failed to generate thumbnail for ${_photo.path}.`)
-        } else {
-          _photo.thumbPath = new_thumbnail_path
-          _photo.thumb = {
-            fullPath: new_thumbnail_fullpath,
-            ext: new_thumbnail.format,
-            basename: new_thumbnail_basename,
-            size: new_thumbnail.size,
-            width: new_thumbnail.width,
-            height: new_thumbnail.height
-          }
-          this.emitter('thumbnail_generated', _photo)
-        }
-        await this.database.save()
-      }
-      if (this.forceStopGenerating) {
-        console.error('Forcing stop generating')
-        this.forceStopGenerating = false
-        break
-      }
-    }
-    this.isGeneratingThumbnails = false
-    this.emitter('generating_thumbnails', { isGenerating: false })
   }
 
   getPhotosSortedFiltered(filters, orderBy, orderDesc) {

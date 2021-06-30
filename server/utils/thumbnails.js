@@ -43,6 +43,7 @@ async function generateThumbnail(path, output) {
 
   if (!sharpInfo.size) {
     console.error('Sharp Invalid Size', sharpInfo, path, output)
+    await fs.unlink(output)
     return false
   }
 

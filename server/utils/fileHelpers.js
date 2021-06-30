@@ -102,20 +102,6 @@ async function getImageStats(path) {
 }
 module.exports.getImageStats = getImageStats
 
-
-function stringHash(str) {
-  var hash = 0, i, chr
-  if (str.length === 0) return hash
-  for (i = 0; i < str.length; i++) {
-    chr = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + chr
-    hash |= 0 // Convert to 32bit integer
-  }
-  return (hash + 2147483647 + 1).toString(16)
-}
-module.exports.stringHash = stringHash
-
-
 async function moveFile(from, to) {
   return fs.move(from, to).then(() => {
     console.log('Moved file', from, to)

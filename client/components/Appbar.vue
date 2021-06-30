@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full" :class="isScanning ? 'h-24' : 'h-16'">
+  <div class="w-full h-16">
     <div class="w-full flex items-center bg-fg px-4 h-16">
       <nuxt-link v-if="album" to="/" class="w-12 h-12 cursor-pointer mr-2 p-2 rounded-full hover:bg-opacity-25 bg-black bg-opacity-0">
         <icon icon="arrowLeft" />
@@ -26,9 +26,6 @@
       <div v-else-if="album && album.id !== 'starred'">
         <btn class="bg-red-500 hover:bg-red-600 mr-6" @click="deleteAlbum">Delete Album</btn>
       </div>
-    </div>
-    <div v-if="isScanning" class="w-full h-8 bg-error bg-opacity-90 flex items-center justify-center px-4">
-      <p class="text-xl">Initial Scan in Progress...</p>
     </div>
   </div>
 </template>
@@ -62,9 +59,6 @@ export default {
     },
     albumName() {
       return this.album ? this.album.name : null
-    },
-    isScanning() {
-      return this.$store.state.isScanning
     }
   },
   methods: {

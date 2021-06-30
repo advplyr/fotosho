@@ -83,7 +83,7 @@ export default {
       loadedPhotos: [],
       mousemoveTimeout: null,
       hideOverlay: false,
-      auto: true,
+      auto: false,
       slideTime: 8000,
       slideTimeout: null
     }

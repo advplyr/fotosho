@@ -6,6 +6,7 @@ const SocketIO = require('socket.io')
 const Gallery = require('./Gallery')
 const Database = require('./Database')
 const Scanner = require('./Scanner')
+const Thumbnails = require('./Thumbnails')
 const Watcher = require('./Watcher')
 
 class Server {
@@ -20,10 +21,14 @@ class Server {
     this.database = new Database(this.ConfigPath)
     this.scanner = new Scanner(this.PhotoPath, this.ThumbnailPath, this.database)
     this.gallery = new Gallery(this.ThumbnailPath, this.database, this.emitter.bind(this))
+    this.thumbnails = new Thumbnails(this.PhotoPath, this.ThumbnailPath, this.database, this.emitter.bind(this))
+
     this.server = null
     this.io = null
 
     this.clients = {}
+    this.isScanning = false
+    this.isInitialized = false
   }
 
   get photos() {
@@ -44,7 +49,7 @@ class Server {
     console.log('Scan Result', scanResult)
     if (scanResult && scanResult.newPhoto) {
       this.gallery.checkGenThumbnails()
-      this.emitter('new_photo', newPhoto)
+      this.emitter('new_photo', scanResult.newPhoto)
     }
     // Update was made
   }
@@ -57,12 +62,17 @@ class Server {
   }
 
   async init() {
+    this.isScanning = true
+    this.emitter('scan_start')
     await this.scanner.scan()
     await this.scanner.scanThumbnails()
-
+    this.isScanning = false
+    this.isInitialized = true
     this.emitter('scan_complete')
 
-    this.gallery.checkGenThumbnails()
+
+    // this.gallery.checkGenThumbnails()
+    this.thumbnails.checkGenerateThumbnails()
 
     // if (process.env.NODE_ENV === 'production') {
     this.watcher.initWatcher()
@@ -75,7 +85,6 @@ class Server {
   async start() {
     console.log('=== Starting Server ===')
     await this.database.init()
-    this.init()
 
     const app = express()
     this.server = http.createServer(app)
@@ -115,6 +124,7 @@ class Server {
         methods: ["GET", "POST"]
       }
     })
+
     this.io.on('connection', (socket) => {
       console.log('Socket Connected', socket.id)
       this.clients[socket.id] = {
@@ -125,10 +135,15 @@ class Server {
       var photosGrouped = this.gallery.getPhotosSortedFiltered({}, null, null)
       socket.emit('init', {
         albums: this.albums,
-        scanning: this.scanner.isScanning,
-        num_photos: photosGrouped.length
+        scanning: this.isScanning,
+        num_photos: photosGrouped.length,
+        isInitialized: this.isInitialized,
+        photoPath: this.PhotoPath,
+        thumbnailPath: this.ThumbnailPath,
+        configPath: this.ConfigPath
       })
 
+      socket.on('start_init', this.init.bind(this))
       socket.on('add_to_album', (data) => this.gallery.addToAlbum(socket, data))
       socket.on('add_to_new_album', (data) => this.gallery.addToNewAlbum(socket, data))
       socket.on('remove_from_album', (data) => this.gallery.removeFromAlbum(socket, data))
