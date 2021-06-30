@@ -12,7 +12,7 @@ Host your own web photo gallery to manage your home photos on your own server.
 
 This project was built to run as a docker container.
 
-[Docker Hub](https://hub.docker.com/r/mcoop320/fotosho/)
+[Docker Hub](https://hub.docker.com/r/advplyr/fotosho/)
 
 
 ## Contributing

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Host your own web photo gallery to manage your home photos on your own server",
   "private": false,
-  "author": "mcoop320",
+  "author": "advplyr",
   "scripts": {
     "dev": "node index.js",
     "start": "node index.js"
