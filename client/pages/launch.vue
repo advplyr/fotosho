@@ -29,8 +29,11 @@
           <path fill="currentColor" d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
         </svg>
       </div>
+      <div v-if="isScanning" class="text-center">
+        <p>{{ scanProgressPercent }}</p>
+      </div>
 
-      <p class="mb-2 mt-6 text-center">* Initial scan looks for all photos in Photo Path and Thumbnail Path and syncs them with the database stored at Config Path.<br /><br />* After scanning is complete thumbnails are generated for every photo that needs one.<br /><br /><span class="text-error text-lg">First time scan can take several minutes!</span></p>
+      <p class="mb-2 mt-6 text-center"><span class="text-error text-lg">First time scan can take several minutes for large photo collections!</span><br /><br />* Scans for all photos in Photo Path and Thumbnail Path and syncs them with the database stored in Config Path.<br /><br />* After scanning is complete thumbnails are generated.</p>
     </div>
   </div>
 </template>
@@ -39,7 +42,8 @@
 export default {
   data() {
     return {
-      hasRequestedInit: false
+      hasRequestedInit: false,
+      scanProgress: null
     }
   },
   computed: {
@@ -57,6 +61,10 @@ export default {
     },
     isScanning() {
       return this.$store.state.isScanning
+    },
+    scanProgressPercent() {
+      if (!this.scanProgress) return '0%'
+      return this.scanProgress.percent
     }
   },
   methods: {
@@ -65,7 +73,16 @@ export default {
       this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'start_init' })
     }
   },
-  mounted() {}
+  mounted() {
+    var socket = this.$root.socket
+    if (!socket) {
+      console.error('No Socket')
+      return
+    }
+    socket.on('scan_progress', (pay) => {
+      this.scanProgress = pay
+    })
+  }
 }
 </script>
 

@@ -2,9 +2,11 @@ const fs = require('fs-extra')
 const sharp = require('sharp')
 sharp.cache(false)
 
-function runSharp(input, output) {
+function runSharp(input, output, resizeOptions) {
   return sharp(input, { failOnError: false })
-    .resize(320, 320, { fit: 'cover' })
+    // .resize(320, 320, { fit: 'cover' })
+    .rotate()
+    .resize(resizeOptions)
     .toFile(output)
     .then((info) => {
       return info
@@ -28,9 +30,9 @@ async function waitPathExists(path, attempts = 0) {
   return true
 }
 
-async function generateThumbnail(path, output) {
+async function generateThumbnail(path, output, thumbSizeObj) {
   // console.log('Generate thumbnail', path)
-  const sharpInfo = await runSharp(path, output)
+  const sharpInfo = await runSharp(path, output, thumbSizeObj)
 
   if (!sharpInfo) {
     var _exists = await fs.pathExists(output)

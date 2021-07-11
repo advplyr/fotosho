@@ -24,7 +24,7 @@ class Thumbnails {
   }
 
 
-  getNewPhotoThumbnailPath(photo, thumbSize = 320) {
+  getNewPhotoThumbnailPath(photo, thumbSize = 240) {
     var basename = `${photo.id}_${thumbSize}`
     var path = `${Path.sep}${basename}.${this.ThumbnailFormat}`
     return {
@@ -35,44 +35,50 @@ class Thumbnails {
   }
 
   async generateThumbnails(photos) {
+    var thumbSizes = [{
+      name: 'thumb',
+      height: 240,
+      width: 240,
+      fit: 'cover'
+    }, {
+      name: 'preview',
+      height: 800,
+      width: null
+    }]
+
     var generated = 0
     var failed = 0
     var existed = 0
-    var reused = 0
     var photosGenerated = []
     await Promise.all(photos.map(async photo => {
-      var { basename, path, fullPath } = this.getNewPhotoThumbnailPath(photo)
-      var exists = await fs.pathExists(fullPath)
-      var thumbData = null
-      if (exists) {
-        thumbData = await thumbnailStats(fullPath)
-        if (thumbData) existed++
-      } else {
-        // If a duplicate photo exists with a thumbnail already generated - then dont generate another, use that one
-        var found_dupe = this.photos.find(_photo => {
-          return _photo.basename === photo.basename && _photo.size === photo.size
-        })
-        if (found_dupe && found_dupe.thumbPath && found_dupe.thumb) {
-          reused++
-          thumbData = found_dupe.thumb
+      for (let i = 0; i < thumbSizes.length; i++) {
+        var thumbObj = thumbSizes[i]
+        var { basename, path, fullPath } = this.getNewPhotoThumbnailPath(photo, thumbObj.height)
+
+        var exists = await fs.pathExists(fullPath)
+        var thumbData = null
+        if (exists) {
+          thumbData = await thumbnailStats(fullPath)
+          if (thumbData) existed++
         } else {
-          thumbData = await generateThumbnail(photo.fullPath, fullPath)
+          thumbData = await generateThumbnail(photo.fullPath, fullPath, thumbObj)
           if (thumbData) generated++
         }
-      }
-      if (!thumbData) {
-        failed++
-      } else {
-        photo.thumbPath = path
-        photo.thumb = {
-          fullPath: fullPath,
-          ext: this.ThumbnailFormat,
-          basename: basename,
-          size: thumbData.size,
-          width: thumbData.width,
-          height: thumbData.height
+        if (!thumbData) {
+          failed++
+        } else {
+          var pathVariable = `${thumbObj.name}Path`
+          photo[pathVariable] = path
+          photo[thumbObj.name] = {
+            fullPath: fullPath,
+            ext: this.ThumbnailFormat,
+            basename: basename,
+            size: thumbData.size,
+            width: thumbData.width,
+            height: thumbData.height
+          }
+          photosGenerated.push(photo)
         }
-        photosGenerated.push(photo)
       }
     }))
     if (photosGenerated.length) {
@@ -81,8 +87,7 @@ class Thumbnails {
     return {
       generated,
       failed,
-      existed,
-      reused
+      existed
     }
   }
 
@@ -102,7 +107,6 @@ class Thumbnails {
     var generated = 0
     var existed = 0
     var failed = 0
-    var reused = 0
     console.log(`Chunks to generate: ${chunked_photos.length}`)
     for (let i = 0; i < chunked_photos.length; i++) {
       var chunk = chunked_photos[i]
@@ -111,8 +115,7 @@ class Thumbnails {
       generated += results.generated
       existed += results.existed
       failed += results.failed
-      reused += results.reused
-      console.log(`Chunk ${i} Complete: ${results.generated} Generated|${results.existed} Existed|${results.failed} Failed|${results.reused} Reused`)
+      console.log(`Chunk ${i} Complete: ${results.generated} Generated|${results.existed} Existed|${results.failed} Failed`)
       if (results.generated > 0 || results.existed > 0) {
         await this.database.save()
       }

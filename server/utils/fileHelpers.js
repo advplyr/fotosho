@@ -62,6 +62,16 @@ async function getImageMetadata(path) {
 }
 module.exports.getImageMetadata = getImageMetadata
 
+async function getImageBuffer(path) {
+  return sharp(path, { failOnError: false }).toBuffer({ resolveWithObject: true }).then(async (obj) => {
+    return obj
+  }).catch((error) => {
+    console.error('failed to get buffer', error)
+    return false
+  })
+}
+module.exports.getImageBuffer = getImageBuffer
+
 async function getFileStat(path) {
   try {
     var stat = await fs.stat(path)
@@ -79,21 +89,43 @@ async function getFileStat(path) {
 }
 module.exports.getFileStat = getFileStat
 
+async function fsStat(path) {
+  return fs.stat(path)
+}
+module.exports.fsStat = fsStat
+
 async function getImageStats(path) {
   try {
-    var stat = await fs.stat(path)
-    var metadata = await getImageMetadata(path) || {}
+    // Not pulling metadata on initial scan anymore
+    // var promdata = await Promise.all([fs.stat(path), getImageMetadata(path), getImageBuffer(path)])
+    var promdata = await Promise.all([fs.stat(path), getImageBuffer(path)])
+    var stat = promdata[0] || {}
+    var bufferObj = promdata[1] || {}
+
+    var bufferBytes = Object.values(bufferObj.data) || []
+    var bufferInfo = bufferObj.info || {}
+    var byteSum = 0
+    bufferBytes.forEach((byte) => byteSum += byte)
+
+    if (!byteSum) {
+      console.error('Invalid byte sum', bufferObj)
+      return false
+    }
+
     return {
+      fingerprint: byteSum.toString(36),
       size: stat.size,
+      rawSize: bufferInfo.size || 0,
       atime: stat.atime,
       mtime: stat.mtime,
       ctime: stat.ctime,
       birthtime: stat.birthtime,
-      width: metadata.width || null,
-      height: metadata.height || null,
-      hasAlpha: metadata.hasAlpha === undefined ? null : !!metadata.hasAlpha,
-      orientation: metadata.orientation || null,
-      exif: !!metadata.exif
+      birthtimeMs: stat.birthtimeMs,
+      width: bufferInfo.width || null,
+      height: bufferInfo.height || null
+      // hasAlpha: metadata.hasAlpha === undefined ? null : !!metadata.hasAlpha,
+      // orientation: metadata.orientation || null,
+      // exif: !!metadata.exif
     }
   } catch (err) {
     console.error('Failed to stat', err)

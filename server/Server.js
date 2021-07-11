@@ -48,7 +48,7 @@ class Server {
     var scanResult = await this.scanner.scanFile(path, fullPath)
     console.log('Scan Result', scanResult)
     if (scanResult && scanResult.newPhoto) {
-      this.gallery.checkGenThumbnails()
+      this.thumbnails.checkGenerateThumbnails()
       this.emitter('new_photo', scanResult.newPhoto)
     }
     // Update was made
@@ -62,6 +62,10 @@ class Server {
   }
 
   async init() {
+    this.scanner.on('scan_progress', data => {
+      this.io.emit('scan_progress', data)
+    })
+
     this.isScanning = true
     this.emitter('scan_start')
     await this.scanner.scan()
@@ -70,16 +74,14 @@ class Server {
     this.isInitialized = true
     this.emitter('scan_complete')
 
-
-    // this.gallery.checkGenThumbnails()
     this.thumbnails.checkGenerateThumbnails()
 
-    // if (process.env.NODE_ENV === 'production') {
-    this.watcher.initWatcher()
-    this.watcher.on('file_added', this.fileAddedUpdated.bind(this))
-    this.watcher.on('file_removed', this.fileRemoved.bind(this))
-    this.watcher.on('file_updated', this.fileAddedUpdated.bind(this))
-    // }
+    if (process.env.NODE_ENV === 'production') {
+      this.watcher.initWatcher()
+      this.watcher.on('file_added', this.fileAddedUpdated.bind(this))
+      this.watcher.on('file_removed', this.fileRemoved.bind(this))
+      this.watcher.on('file_updated', this.fileAddedUpdated.bind(this))
+    }
   }
 
   async start() {
@@ -90,7 +92,7 @@ class Server {
     this.server = http.createServer(app)
 
     app.use(cors())
-    var distPath = Path.resolve(global.appRoot, '/client/dist')
+    const distPath = Path.resolve(global.appRoot, '/client/dist')
     app.use(express.static(distPath))
     app.use(express.static(this.PhotoPath))
     app.use(express.static(this.ThumbnailPath))
@@ -102,6 +104,10 @@ class Server {
     })
     app.get('/albums/:id', (req, res) => {
       res.sendFile('/index.html')
+    })
+    app.get('/stats/:id', async (req, res) => {
+      var stats = await this.scanner.getStatRequest(req.params.id)
+      res.json(stats)
     })
     app.get('/test', (req, res) => {
       console.log('Test request')

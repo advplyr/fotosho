@@ -1,8 +1,6 @@
 const Path = require('path')
-const fs = require('fs-extra')
 const { moveFile } = require('./utils/fileHelpers')
 const { stringHash } = require('./utils')
-const { generateThumbnail, thumbnailStats } = require('./utils/thumbnails')
 
 class Gallery {
   constructor(THUMBNAIL_PATH, database, emitter) {
@@ -11,7 +9,6 @@ class Gallery {
     this.database = database
 
     this.ThumbnailFormat = 'webp'
-
 
     this.photosOrderBy = null
     this.photosOrderDesc = false

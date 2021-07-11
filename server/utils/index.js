@@ -5,15 +5,20 @@ module.exports.msToElapsed = (millis) => {
   return `${minutes}:${(seconds < 10 ? "0" : "")}${seconds}`;
 }
 
-module.exports.stringHash = (str) => {
+module.exports.stringHash = (str, base = 36) => {
+  if (!str) return '0'
+  str = String(str)
+  if (!str.length) return '0'
   var hash = 0, i, chr
-  if (str.length === 0) return hash
   for (i = 0; i < str.length; i++) {
     chr = str.charCodeAt(i)
     hash = ((hash << 5) - hash) + chr
     hash |= 0 // Convert to 32bit integer
   }
-  return (hash + 2147483647 + 1).toString(16)
+
+  // Always positive
+  hash = hash + 2147483647 + 1
+  return hash.toString(base)
 }
 
 module.exports.chunker = (items, chunkSize) => {

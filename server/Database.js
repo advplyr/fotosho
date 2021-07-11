@@ -8,7 +8,9 @@ class Database {
     this.DbPath = Path.join(CONFIG_PATH, 'db.json')
     this.db = null
     this.photos = []
+    this.duplicate_photos = []
     this.albums = []
+    this.failed_photos = []
   }
 
   async init() {
@@ -29,11 +31,15 @@ class Database {
       this.db.set('photos', [])
     }
     this.photos = this.db.get('photos')
+    this.duplicate_photos = this.db.get('duplicate_photos')
+    this.failed_photos = this.db.get('failed_photos')
     this.albums = this.db.get('albums')
   }
 
   save() {
     this.db.set('photos', this.photos)
+    this.db.set('duplicate_photos', this.duplicate_photos)
+    this.db.set('failed_photos', this.failed_photos)
     this.db.set('albums', this.albums)
     return this.db.sync()
   }

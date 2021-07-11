@@ -1,10 +1,11 @@
 <template>
-  <div v-if="show" class="fixed w-screen h-screen top-0 left-0 right-0 botttom-0 bg-black z-20" :class="hideOverlay ? 'cursor-none' : ''" @click="clickedBackground">
+  <div v-if="show" class="fixed w-screen h-screen top-0 left-0 right-0 botttom-0 bg-black z-20" :class="hideOverlay ? 'cursor-none' : ''" @click.prevent>
     <div class="w-full h-full">
       <div @click.stop.prevent class="h-full w-full relative flex items-center justify-center">
         <img id="slideshowImg" ref="img" :class="photoClass" />
-
-        <loading-indicator v-show="loading" />
+        <transition name="fade">
+          <loading-indicator v-show="loading" />
+        </transition>
       </div>
     </div>
 
@@ -28,7 +29,6 @@
             <p class="text-xs">{{ photoSizePretty }}</p>
           </div>
         </div>
-        <p class="text-xs">Birthtime: {{ photoBirthtime }}</p>
       </div>
 
       <div v-show="!loading" class="absolute right-0 bottom-0 py-4 px-6 z-20">
@@ -41,6 +41,7 @@
             <div class="select-none">Auto Slide</div>
           </label>
 
+          <icon-btn icon="image" :class="showOriginal ? 'text-warning' : 'text-success'" @click="toggleIsOriginal" />
           <icon-btn icon="pencil" :size="10" :padding="1.5" @click="editClick" />
           <icon-btn icon="download" @click="downloadClick" />
           <!-- <icon-btn icon="trash" @click="deleteClick" /> -->
@@ -79,6 +80,7 @@ export default {
   data() {
     return {
       photo: null,
+      showOriginal: false,
       loading: false,
       loadedPhotos: [],
       mousemoveTimeout: null,
@@ -123,6 +125,9 @@ export default {
       set(val) {
         this.$emit('input', val)
       }
+    },
+    photoId() {
+      return this.photo ? this.photo.id : null
     },
     photoPath() {
       if (!this.photo || !this.photo.path) return null
@@ -169,6 +174,21 @@ export default {
     }
   },
   methods: {
+    toggleIsOriginal() {
+      if (!this.photo) {
+        return null
+      }
+      this.showOriginal = !this.showOriginal
+      if (!this.showOriginal && !this.photo.previewPath) {
+        this.$store.commit('addToast', { text: `Preview Image not available for photo ${this.photo.id}`, type: 'error' })
+        this.showOriginal = true
+        return
+      }
+
+      if (this.$refs.img) {
+        this.$refs.img.src = this.showOriginal ? this.photo.originalSrc : this.photo.previewSrc
+      }
+    },
     resetLoaded() {
       this.loadedPhotos = []
     },
@@ -200,19 +220,32 @@ export default {
       if (!photo) {
         var uri = `${process.env.serverUrl}/slideshow/photo/${this.selectedPhotoIndex}?${this.requestQuery}`
         var photo = await this.$axios.$get(uri)
+        console.log('Recieved photo by index', this.selectedPhotoIndex, photo)
+
         photo.index = this.selectedPhotoIndex
-        photo.src = `${process.env.serverUrl}${photo.path}`
-        var img = await this.loadImg(photo.src)
+        photo.previewSrc = photo.previewPath ? `${process.env.serverUrl}${photo.previewPath}` : null
+        photo.originalSrc = photo.path ? `${process.env.serverUrl}${photo.path}` : 'Logo.png'
+
+        if (!this.showOriginal && !photo.previewSrc) {
+          this.$store.commit('addToast', { text: `Preview Image not available for photo ${photo.id}`, type: 'error' })
+          this.showOriginal = true
+        }
+
+        var src = this.showOriginal ? photo.originalSrc : photo.previewSrc
+        var img = await this.loadImg(src)
         photo.width = img.naturalWidth
         photo.height = img.naturalHeight
 
         this.loadedPhotos.push(photo)
       } else {
         console.log('Found photo', photo)
+        if (!this.showOriginal && !photo.previewSrc) {
+          this.showOriginal = true
+        }
       }
 
       if (this.$refs.img) {
-        this.$refs.img.src = photo.src
+        this.$refs.img.src = src
       } else {
         console.error('No Img Ref', ticks)
       }
@@ -232,9 +265,6 @@ export default {
       } else {
         this.selectedPhotoIndex++
       }
-    },
-    clickedBackground() {
-      this.show = false
     },
     editClick() {
       console.log('editClick')
@@ -301,5 +331,17 @@ export default {
 <style>
 input:checked + svg {
   display: block;
+}
+.fade-enter-active {
+  transition: opacity 1s;
+}
+.fade-leave-active {
+  transition: opacity 0s;
+}
+.fade-enter {
+  opacity: 0;
+}
+.fade-leave-to {
+  opacity: 1;
 }
 </style>

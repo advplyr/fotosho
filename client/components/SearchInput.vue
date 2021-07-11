@@ -46,7 +46,7 @@ export default {
         this.isTyping = false
         console.log('CHANGE', this.inputValue)
         this.$emit('change', this.inputValue)
-      }, 1000)
+      }, 750)
     },
     clickIcon() {
       if (this.inputValue) {

@@ -1,5 +1,5 @@
 <template>
-  <div ref="toaster" class="w-72 fixed bottom-1 right-1">
+  <div ref="toaster" class="w-72 fixed bottom-1 right-1 z-50">
     <transition-group tag="div" class="img-slider" name="slide">
       <template v-for="toast in toasts">
         <div :key="toast.id" :id="`toast-${toast.id}`" class="w-full my-1 rounded-lg drop-shadow-lg p-4 flex items-center justify-center text-center transition-all" :class="`bg-${toast.type}`">
