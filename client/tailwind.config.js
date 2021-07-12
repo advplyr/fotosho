@@ -1,5 +1,12 @@
 module.exports = {
-  purge: [],
+  purge: {
+    options: {
+      safelist: [
+        'w-10',
+        'h-10'
+      ]
+    }
+  },
   darkMode: false, // or 'media' or 'class'
   theme: {
     extend: {

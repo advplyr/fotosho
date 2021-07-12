@@ -12,6 +12,9 @@ class Thumbnails {
 
     this.ThumbnailFormat = 'webp'
 
+    this.isGenThumbPrev = false
+    this.pendingGens = []
+
     this.forceStopGenerating = false
     this.isGeneratingThumbnails = false
   }
@@ -31,6 +34,26 @@ class Thumbnails {
       basename,
       path,
       fullPath: Path.join(this.ThumbnailPath, path)
+    }
+  }
+
+  async generatePhotoThumbPrev(photo) {
+    if (this.isGenThumbPrev) {
+      this.pendingGens.push(photo)
+      console.log('Already generating thumb, push pending', photo.id)
+      return
+    }
+
+    this.isGenThumbPrev = true
+    var genres = await this.generateThumbnails([photo])
+    if (genres && genres.generated > 0) {
+      await this.database.save()
+    }
+    this.isGenThumbPrev = false
+
+    if (this.pendingGens.length) {
+      var nextPendingGen = this.pendingGens.shift()
+      this.generatePhotoThumbPrev(nextPendingGen)
     }
   }
 
@@ -77,7 +100,9 @@ class Thumbnails {
             width: thumbData.width,
             height: thumbData.height
           }
-          photosGenerated.push(photo)
+          var photoIndex = photosGenerated.findIndex(p => p.id === photo.id)
+          if (photoIndex >= 0) photosGenerated.splice(photoIndex, 1, photo)
+          else photosGenerated.push(photo)
         }
       }
     }))

@@ -8,7 +8,7 @@
       <div class="flex-grow" />
       <!-- <p class="text-sm font-mono leading-4 px-4">{{ totalSizePretty }}</p> -->
       <search-input v-model="search" :processing="isFetching" @change="performSearch" class="mr-2" />
-      <order-select v-model="orderBy" :descending.sync="orderByDesc" class="mr-2 w-40" @change="changedOrderBy" />
+      <order-select v-model="orderBy" :descending.sync="orderDesc" class="mr-2 w-40" @change="changedOrderBy" />
       <select-dropdown v-model="cardSize" :items="cardSizes" label="Size" class="w-32" @change="changeCardSize" />
     </div>
 
@@ -77,14 +77,38 @@ export default {
           value: 'xl'
         }
       ],
-      orderBy: 'added_at',
-      orderByDesc: true,
-      cardSize: 'md',
       search: null,
       requestQuery: null
     }
   },
   computed: {
+    cardSize: {
+      get() {
+        return this.$store.state.settings.card_size
+      },
+      set(val) {
+        this.$store.commit('setCardSize', val)
+        this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'update_settings', msg: { card_size: val } })
+      }
+    },
+    orderBy: {
+      get() {
+        return this.$store.state.settings.order_by
+      },
+      set(val) {
+        this.$store.commit('setOrderBy', val)
+        this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'update_settings', msg: { order_by: val } })
+      }
+    },
+    orderDesc: {
+      get() {
+        return this.$store.state.settings.order_desc
+      },
+      set(val) {
+        this.$store.commit('setOrderDesc', !!val)
+        this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'update_settings', msg: { order_desc: !!val } })
+      }
+    },
     hasSearch() {
       return this.search && this.search.length
     },
@@ -125,6 +149,9 @@ export default {
       // this.checkPageScrollHeight()
       this.$nextTick(this.checkPageScrollHeight)
     },
+    refreshPhotos() {
+      this.requestPhotos(0, true)
+    },
     editPhoto(photo) {
       this.selectedPhoto = photo
       this.showEditModal = true
@@ -133,9 +160,6 @@ export default {
       var index = this.photos.findIndex((p) => p.id === photo.id)
       this.slideshowPhotoIndex = index
       this.showSlideshow = true
-    },
-    refreshPhotos() {
-      this.requestPhotos(0, true)
     },
     photoStarred({ photoId, isStarred }) {
       const payload = {
@@ -147,8 +171,6 @@ export default {
       } else {
         this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'remove_from_album', msg: payload })
       }
-
-      this.$store.commit('setSelectedPhotos', [])
     },
     updateThumbnail(photo) {
       var _photo = this.photos.find((p) => p.id === photo.id)
@@ -163,7 +185,7 @@ export default {
       }
     },
     requestPhotos(start, reset = false) {
-      var query = `orderBy=${this.orderBy}&orderDesc=${this.orderByDesc ? 1 : 0}`
+      var query = `orderBy=${this.orderBy}&orderDesc=${this.orderDesc ? 1 : 0}`
       if (this.albumId) {
         query += `&album=${this.albumId}`
       }
@@ -171,7 +193,7 @@ export default {
         query += `&search=${this.search}`
       }
 
-      if (this.fetchingStart === start && query === this.requestQuery) {
+      if (!reset && this.fetchingStart === start && query === this.requestQuery) {
         console.error('Already fetching start', this.fetchingStart, this.requestQuery)
         return
       }

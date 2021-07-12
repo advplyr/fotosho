@@ -16,11 +16,11 @@
         <p class="text-2xl font-mono font-medium">{{ selectedPhotoIndex + 1 }} of {{ numPhotos }}</p>
       </div>
 
-      <div class="absolute top-4 right-4 flex items-center justify-center pointer-events-none z-20">
+      <!-- <div class="absolute top-4 right-4 flex items-center justify-center pointer-events-none z-20">
         <div class="h-14 w-14 p-2 text-white hover:text-gray-200 bg-white bg-opacity-0 hover:bg-opacity-10 rounded-full pointer-events-auto cursor-pointer shadow-xl" @click.stop.prevent="show = false">
           <icon icon="close" />
         </div>
-      </div>
+      </div> -->
 
       <div v-show="!loading" class="absolute left-0 bottom-0 py-4 px-6 z-20">
         <div class="flex mb-2">
@@ -48,7 +48,7 @@
         </div>
       </div>
 
-      <div class="absolute top-0 left-0 bottom-0 h-full w-1/3 bg-transparent opacity-0 hover:opacity-100 transition-opacity z-10" @click.stop.prevent="goPrevImage">
+      <div class="absolute top-0 left-0 bottom-0 h-full w-1/3 bg-transparent opacity-0 hover:opacity-100 transition-opacity z-10 cursor-pointer" @click.stop.prevent="goPrevImage">
         <div class="absolute top-0 bottom-0 left-8 flex items-center justify-center pointer-events-none">
           <div class="h-20 w-20 p-2 text-white hover:text-gray-400 rounded-full pointer-events-auto cursor-pointer shadow-xl">
             <icon icon="chevronLeft" />
@@ -56,7 +56,7 @@
         </div>
       </div>
 
-      <div class="absolute top-0 right-0 bottom-0 h-full w-1/3 bg-transparent opacity-0 hover:opacity-100 transition-opacity z-10" @click.stop.prevent="goNextImage">
+      <div class="absolute top-0 right-0 bottom-0 h-full w-1/3 bg-transparent opacity-0 hover:opacity-100 transition-opacity z-10 cursor-pointer" @click.stop.prevent="goNextImage">
         <div class="absolute top-0 bottom-0 right-8 flex items-center justify-center pointer-events-none">
           <div class="h-20 w-20 p-2 text-white hover:text-gray-400 rounded-full pointer-events-auto cursor-pointer shadow-xl">
             <icon icon="chevronRight" />
@@ -86,7 +86,6 @@ export default {
       mousemoveTimeout: null,
       hideOverlay: false,
       auto: false,
-      slideTime: 8000,
       slideTimeout: null
     }
   },
@@ -124,6 +123,28 @@ export default {
       },
       set(val) {
         this.$emit('input', val)
+      }
+    },
+    slideDuration: {
+      get() {
+        return this.$store.state.settings.slide_duration
+      },
+      set(val) {
+        if (!val || isNaN(val) || Number(val) < 1000) {
+          console.error('Invalid slide duration', val)
+          return
+        }
+        this.$store.commit('setSlideDuration', Number(val))
+        this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'update_settings', msg: { slide_duration: Number(val) } })
+      }
+    },
+    autoSlide: {
+      get() {
+        return this.$store.state.settings.auto_slide
+      },
+      set(val) {
+        this.$store.commit('setAutoSlide', !!val)
+        this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'update_settings', msg: { auto_slide: !!val } })
       }
     },
     photoId() {
@@ -290,7 +311,7 @@ export default {
       clearInterval(this.slideTimeout)
       this.slideTimeout = setInterval(() => {
         this.goNextImage()
-      }, this.slideTime)
+      }, this.slideDuration)
     },
     keydown(ev) {
       var keycodes = [37, 39, 32, 27]

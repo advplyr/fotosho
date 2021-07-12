@@ -8,6 +8,7 @@ class Database {
     this.DbPath = Path.join(CONFIG_PATH, 'db.json')
     this.db = null
     this.photos = []
+    this.settings = {}
     this.duplicate_photos = []
     this.albums = []
     this.failed_photos = []
@@ -30,10 +31,14 @@ class Database {
     if (!this.db.has('photos')) {
       this.db.set('photos', [])
     }
+    if (!this.db.has('settings')) {
+      this.db.set('settings', this.getDefaultSettings())
+    }
     this.photos = this.db.get('photos')
     this.duplicate_photos = this.db.get('duplicate_photos')
     this.failed_photos = this.db.get('failed_photos')
     this.albums = this.db.get('albums')
+    this.settings = this.db.get('settings')
   }
 
   save() {
@@ -41,7 +46,18 @@ class Database {
     this.db.set('duplicate_photos', this.duplicate_photos)
     this.db.set('failed_photos', this.failed_photos)
     this.db.set('albums', this.albums)
+    this.db.set('settings', this.settings)
     return this.db.sync()
+  }
+
+  getDefaultSettings() {
+    return {
+      order_by: 'added_at',
+      order_desc: true,
+      card_size: 'md',
+      auto_slide: false,
+      slide_duration: 8000
+    }
   }
 }
 module.exports = Database

@@ -1,6 +1,6 @@
 <template>
   <div class="rounded-xl overflow-hidden cursor-pointer m-1.5 relative border" :class="selected ? 'border-yellowgreen' : 'border-transparent hover:border-gray-300'" :style="{ height: cardHeight + 'rem', width: cardWidth + 'rem', margin: cardMargin + 'rem' }">
-    <img :id="thumbnailId" :src="path" loading="lazy" class="w-full h-full" />
+    <img :id="thumbnailId" :src="path" loading="lazy" class="w-full h-full" @error="imgFailed" />
 
     <div v-if="isSocketConnected" class="w-full h-full bg-black absolute top-0 left-0 cursor-pointer" :class="bgClassList" @mouseenter="mouseenter" @mouseleave="mouseleave" @click="clickCard">
       <div class="absolute top-1.5 left-1.5 hover:text-yellowgreen" :class="radioClass" @click.prevent.stop="selectClick">
@@ -15,9 +15,6 @@
       <!-- <div ref="download" class="w-6 h-6 absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen" :class="downloadClass" @click.stop.prevent="clickDownload">
         <icon icon="download" />
       </div> -->
-      <div v-if="numCopies > 1" class="absolute text-xs font-mono bottom-1.5 right-1.5 bg-black bg-opacity-50 rounded-sm leading-4 px-1" :class="copiesClass">
-        {{ numCopies }}
-      </div>
       <div v-if="showBasename" class="w-5/6 py-1.5 absolute bottom-0 left-0 right-0 px-1.5" :class="nameClass">
         <p class="truncate text-xs">{{ basename }}</p>
       </div>
@@ -66,7 +63,9 @@ export default {
           height: 20,
           margin: 0.5
         }
-      }
+      },
+      hasFailed: false,
+      failureAttempts: 0
     }
   },
   computed: {
@@ -85,11 +84,6 @@ export default {
     cardMargin() {
       return this.sizeObj.margin
     },
-    numCopies() {
-      return this.photo.numCopies || 1
-      // return this.photo.duplicates.length + 1
-      // return 1
-    },
     basename() {
       return this.photo.basename
     },
@@ -97,9 +91,10 @@ export default {
       return `thumb-${this.photo.id}`
     },
     path() {
-      if (!this.photo.thumbPath) {
+      if (!this.photo.thumbPath || (this.hasFailed && this.failureAttempts >= 5)) {
         return 'Logo.png'
       }
+      if (this.hasFailed) return `${process.env.serverUrl}${this.photo.thumbPath}?attempts=${this.failureAttempts}`
       return `${process.env.serverUrl}${this.photo.thumbPath}`
     },
     isStarred() {
@@ -107,9 +102,6 @@ export default {
     },
     albums() {
       return this.$store.getters.getAlbumsForPhoto(this.photo.id) || []
-    },
-    copiesClass() {
-      return this.isMouseOver || this.selectionMode ? 'opacity-0' : 'opacity-100'
     },
     bgClassList() {
       var classList = []
@@ -160,6 +152,15 @@ export default {
     }
   },
   methods: {
+    imgFailed() {
+      if (this.hasFailed && this.failureAttempts > 5) {
+        return
+      }
+      setTimeout(() => {
+        this.hasFailed = true
+        this.failureAttempts++
+      }, 500)
+    },
     mouseenter() {
       this.isMouseOver = true
     },

@@ -1,7 +1,7 @@
 {
   "name": "fotosho",
   "version": "1.0.0",
-  "description": "Host your own web photo gallery to manage your home photos on your own server",
+  "description": "Fotosho is a photo gallery for your home server",
   "private": false,
   "author": "advplyr",
   "scripts": {

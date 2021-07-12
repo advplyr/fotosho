@@ -70,8 +70,8 @@ export default {
     },
     removeFromAlbum() {
       var photos = this.selectedPhotos.map((p) => p.id)
-      console.log('Remove from album pressed', this.albumId, photos)
       this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'remove_from_album', msg: { albumId: this.albumId, photos } })
+      this.$store.commit('cancelSelection')
     },
     deleteAlbum() {
       this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'delete_album', msg: { albumId: this.albumId } })

@@ -11,7 +11,7 @@ function runSharp(input, output, resizeOptions) {
     .then((info) => {
       return info
     }).catch(err => {
-      console.error('Failed to resize', err)
+      console.error('Sharp error', err)
       return false
     })
 }

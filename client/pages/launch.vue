@@ -1,6 +1,6 @@
 <template>
   <div class="wrapper mx-auto bg-bg p-6">
-    <h1 class="text-2xl text-center mb-4">Fotosho Launch</h1>
+    <h1 class="text-2xl text-center mb-4">First Launch Page</h1>
     <div class="flex flex-col justify-center w-full max-w-xl mx-auto">
       <table id="info-table" class="mb-4">
         <tr>
@@ -33,7 +33,7 @@
         <p>{{ scanProgressPercent }}</p>
       </div>
 
-      <p class="mb-2 mt-6 text-center"><span class="text-error text-lg">First time scan can take several minutes for large photo collections!</span><br /><br />* Scans for all photos in Photo Path and Thumbnail Path and syncs them with the database stored in Config Path.<br /><br />* After scanning is complete thumbnails are generated.</p>
+      <p class="mb-2 mt-6 text-center"><span class="text-error text-lg">First time scan can take several minutes for large photo collections!</span><br /><br />* Scans Photo Path for images and syncs database stored in Config Path (ignores duplicates).<br /><br />* After scanning, a thumbnail (240px × 240px) and preview (800px height) image is generated for each photo.</p>
     </div>
   </div>
 </template>

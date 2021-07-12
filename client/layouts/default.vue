@@ -135,10 +135,13 @@ export default {
         this.$store.commit('addToast', { text: `Photo ${data} not found`, type: 'error' })
       })
       this.socket.on('new_photo', (data) => {
-        this.$store.commit('addToast', { text: `Photo ${data.basename} was added`, type: 'error' })
+        this.$store.commit('addToast', { text: `Photo ${data.basename} was added`, type: 'info' })
       })
       this.socket.on('photo_removed', (data) => {
-        this.$store.commit('addToast', { text: `Photo ${data.basename} was removed`, type: 'error' })
+        this.$store.commit('addToast', { text: `Photo ${data.basename} was removed`, type: 'info' })
+      })
+      this.socket.on('settings_updated', (data) => {
+        console.log('Settings Saved')
       })
     }
   },

@@ -201,11 +201,25 @@ class Scanner extends EventEmitter {
     }
   }
 
+  async unlinkPhoto(path) {
+    try {
+      await fs.unlink(path)
+    } catch (error) {
+      console.error('Failed to unlink photo', path)
+    }
+  }
+
   async removeFile(path, fullPath) {
     var photo = this.photos.find(p => p.path === path)
     if (!photo) {
       console.log('[REMOVE-FILE] File not in Db')
       return false
+    }
+    if (photo.thumb) {
+      this.unlinkPhoto(photo.thumb.fullPath)
+    }
+    if (photo.preview) {
+      this.unlinkPhoto(photo.preview.fullPath)
     }
     this.database.photos = this.database.photos.filter(p => p.id !== photo.id)
     await this.database.save()

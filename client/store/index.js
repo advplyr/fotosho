@@ -3,6 +3,7 @@ export const state = () => ({
   photoPath: null,
   configPath: null,
   thumbnailPath: null,
+  settings: {},
   albums: [],
   numPhotos: 0,
   selectedPhotos: [],
@@ -41,6 +42,22 @@ export const mutations = {
     state.configPath = data.configPath
     state.isScanning = data.scanning
     state.isInitialized = data.isInitialized
+    state.settings = data.settings || {}
+  },
+  setAutoSlide(state, val) {
+    state.settings.auto_slide = val
+  },
+  setSlideDuration(state, val) {
+    state.settings.slide_duration = val
+  },
+  setCardSize(state, val) {
+    state.settings.card_size = val
+  },
+  setOrderBy(state, val) {
+    state.settings.order_by = val
+  },
+  setOrderDesc(state, val) {
+    state.settings.order_desc = val
   },
   setAlbums(state, albums) {
     state.albums = albums

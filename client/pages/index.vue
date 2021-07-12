@@ -26,7 +26,9 @@ export default {
     }
   },
   data() {
-    return {}
+    return {
+      refreshTimeout: null
+    }
   },
   computed: {
     albums() {
@@ -46,17 +48,39 @@ export default {
       data.photos.forEach((photo) => {
         this.$refs.gallery.updateThumbnail(photo)
       })
+    },
+    newPhotoAdded(data) {
+      // Todo: first check if a refresh is needed
+      clearTimeout(this.refreshTimeout)
+      this.refreshTimeout = setTimeout(() => {
+        if (this.$refs.gallery) {
+          this.$refs.gallery.refreshPhotos()
+        }
+      }, 1000)
+    },
+    photoRemoved(data) {
+      // Todo: first check if a refresh is needed
+      clearTimeout(this.refreshTimeout)
+      this.refreshTimeout = setTimeout(() => {
+        if (this.$refs.gallery) {
+          this.$refs.gallery.refreshPhotos()
+        }
+      }, 1000)
     }
   },
   mounted() {
     var socket = this.$root.socket
     if (!socket) return
     socket.on('thumbnails_generated', this.thumbnailsGenerated)
+    socket.on('new_photo', this.newPhotoAdded)
+    socket.on('photo_removed', this.photoRemoved)
   },
   beforeDestroy() {
     var socket = this.$root.socket
     if (!socket) return
     socket.off('thumbnails_generated', this.thumbnailsGenerated)
+    socket.off('new_photo', this.newPhotoAdded)
+    socket.off('photo_removed', this.photoRemoved)
   }
 }
 </script>

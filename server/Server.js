@@ -37,6 +37,9 @@ class Server {
   get albums() {
     return this.database.albums
   }
+  get settings() {
+    return this.database.settings
+  }
 
   emitter(ev, data) {
     if (!this.io) return
@@ -46,9 +49,9 @@ class Server {
   async fileAddedUpdated({ path, fullPath }) {
     console.log('[SERVER] FileAddedUpdated', path, fullPath)
     var scanResult = await this.scanner.scanFile(path, fullPath)
-    console.log('Scan Result', scanResult)
+    // console.log('Scan Result', scanResult)
     if (scanResult && scanResult.newPhoto) {
-      this.thumbnails.checkGenerateThumbnails()
+      this.thumbnails.generatePhotoThumbPrev(scanResult.newPhoto)
       this.emitter('new_photo', scanResult.newPhoto)
     }
     // Update was made
@@ -76,12 +79,12 @@ class Server {
 
     this.thumbnails.checkGenerateThumbnails()
 
-    if (process.env.NODE_ENV === 'production') {
-      this.watcher.initWatcher()
-      this.watcher.on('file_added', this.fileAddedUpdated.bind(this))
-      this.watcher.on('file_removed', this.fileRemoved.bind(this))
-      this.watcher.on('file_updated', this.fileAddedUpdated.bind(this))
-    }
+    // if (process.env.NODE_ENV === 'production') {
+    this.watcher.initWatcher()
+    this.watcher.on('file_added', this.fileAddedUpdated.bind(this))
+    this.watcher.on('file_removed', this.fileRemoved.bind(this))
+    this.watcher.on('file_updated', this.fileAddedUpdated.bind(this))
+    // }
   }
 
   async start() {
@@ -141,6 +144,7 @@ class Server {
       var photosGrouped = this.gallery.getPhotosSortedFiltered({}, null, null)
       socket.emit('init', {
         albums: this.albums,
+        settings: this.settings,
         scanning: this.isScanning,
         num_photos: photosGrouped.length,
         isInitialized: this.isInitialized,
@@ -155,6 +159,7 @@ class Server {
       socket.on('remove_from_album', (data) => this.gallery.removeFromAlbum(socket, data))
       socket.on('delete_album', (data) => this.gallery.deleteAlbum(socket, data))
       socket.on('rename_photo', (data) => this.gallery.renamePhoto(socket, data))
+      socket.on('update_settings', (data) => this.updateSettings(socket, data))
     })
   }
 
@@ -172,6 +177,23 @@ class Server {
         resolve()
       })
     })
+  }
+
+  async updateSettings(socket, data) {
+    if (data.order_by) {
+      this.database.settings.order_by = data.order_by
+    }
+    if (data.card_size) {
+      this.database.settings.card_size = data.card_size
+    }
+    if (data.auto_slide) {
+      this.database.settings.auto_slide = !!data.auto_slide
+    }
+    if (data.slide_duration) {
+      this.database.settings.slide_duration = data.slide_duration
+    }
+    await this.database.save()
+    socket.emit('settings_updated')
   }
 }
 module.exports = Server
