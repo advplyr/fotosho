@@ -60,22 +60,11 @@ export default {
     },
     initialData(data) {
       console.log('InitData', data)
-      this.$store.commit('setInitialData', data)
-
-      if (!this.isReady) {
-        // First socket connection
-        if (!data.isInitialized || data.scanning) {
-          if (this.$route.name !== 'launch') {
-            this.$router.replace('/launch')
-          }
-        } else if (this.$route.name === 'launch') {
-          this.$router.replace('/')
-        }
-
-        this.$nextTick(() => {
-          this.isReady = true
-        })
+      if (data.user) {
+        this.$store.commit('user/setUser', data.user)
       }
+      this.$store.commit('setInitialData', data)
+      this.isReady = true
     },
     initializeSocket() {
       this.socket = this.$nuxtSocket({
@@ -84,7 +73,6 @@ export default {
         teardown: true
       })
       this.$root.socket = this.socket
-      console.log('Socket Has Been Defined', this.$store.state.$nuxtSocket)
 
       this.socket.on('connect', this.connect)
       this.socket.on('disconnect', this.disconnect)
@@ -146,7 +134,6 @@ export default {
     }
   },
   beforeMount() {
-    console.log('Mounted Default Layout')
     this.initializeSocket()
   },
   mounted() {}

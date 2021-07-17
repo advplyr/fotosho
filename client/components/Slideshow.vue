@@ -236,11 +236,17 @@ export default {
         return
       }
 
+      var loadingIndex = this.selectedPhotoIndex
       this.loading = true
       var photo = this.loadedPhotos.find((lp) => lp.index === this.selectedPhotoIndex)
+      var src = null
       if (!photo) {
         var uri = `${process.env.serverUrl}/slideshow/photo/${this.selectedPhotoIndex}?${this.requestQuery}`
-        var photo = await this.$axios.$get(uri)
+        photo = await this.$axios.$get(uri)
+        if (loadingIndex !== this.selectedPhotoIndex) {
+          console.warn('LoadingIndex != SelectedPhotoIndex', loadingIndex, this.selectedPhotoIndex)
+          return
+        }
         console.log('Recieved photo by index', this.selectedPhotoIndex, photo)
 
         photo.index = this.selectedPhotoIndex
@@ -252,8 +258,12 @@ export default {
           this.showOriginal = true
         }
 
-        var src = this.showOriginal ? photo.originalSrc : photo.previewSrc
+        src = this.showOriginal ? photo.originalSrc : photo.previewSrc
         var img = await this.loadImg(src)
+        if (loadingIndex !== this.selectedPhotoIndex) {
+          console.warn('LoadingIndex != SelectedPhotoIndex', loadingIndex, this.selectedPhotoIndex)
+          return
+        }
         photo.width = img.naturalWidth
         photo.height = img.naturalHeight
 
@@ -263,9 +273,11 @@ export default {
         if (!this.showOriginal && !photo.previewSrc) {
           this.showOriginal = true
         }
+        src = this.showOriginal ? photo.originalSrc : photo.previewSrc
       }
 
       if (this.$refs.img) {
+        console.log('Setting Img Src', src)
         this.$refs.img.src = src
       } else {
         console.error('No Img Ref', ticks)

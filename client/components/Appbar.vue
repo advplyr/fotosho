@@ -26,6 +26,10 @@
       <div v-else-if="album && album.id !== 'starred'">
         <btn class="bg-red-500 hover:bg-red-600 mr-6" @click="deleteAlbum">Delete Album</btn>
       </div>
+      <div v-else class="flex items-center">
+        <p>v{{ $config.version }}</p>
+        <p class="text-lg pl-4 underline font-semibold">{{ username }}</p>
+      </div>
     </div>
   </div>
 </template>
@@ -37,6 +41,12 @@ export default {
     isReconnecting: Boolean
   },
   computed: {
+    user() {
+      return this.$store.state.user.user
+    },
+    username() {
+      return this.user ? this.user.username : null
+    },
     routeParams() {
       return this.$route.params
     },

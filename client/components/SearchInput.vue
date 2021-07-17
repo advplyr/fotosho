@@ -1,6 +1,6 @@
 <template>
   <div>
-    <label id="listbox-label" class="block text-sm font-medium text-gray-300">Search</label>
+    <label class="block text-sm font-medium text-gray-300">Search</label>
     <div class="relative">
       <input v-model="inputValue" type="text" :disabled="processing" class="bg-fg border border-gray-500 shadow rounded px-3 py-2 focus:outline-none text-sm" placeholder="Search.." @keyup="keyup" />
       <div class="absolute right-0 top-0 bottom-0 h-full flex items-center mr-4 text-purple-lighter">

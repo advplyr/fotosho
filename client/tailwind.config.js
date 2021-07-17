@@ -3,7 +3,8 @@ module.exports = {
     options: {
       safelist: [
         'w-10',
-        'h-10'
+        'h-10',
+        'p-1.5'
       ]
     }
   },

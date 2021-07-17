@@ -2,6 +2,7 @@ const Path = require('path')
 const express = require('express')
 const http = require('http')
 const cors = require('cors')
+const cookieparser = require('cookie-parser')
 const SocketIO = require('socket.io')
 const Gallery = require('./Gallery')
 const Database = require('./Database')
@@ -27,6 +28,7 @@ class Server {
     this.io = null
 
     this.clients = {}
+    this.user = null
     this.isScanning = false
     this.isInitialized = false
   }
@@ -94,8 +96,51 @@ class Server {
     const app = express()
     this.server = http.createServer(app)
 
+    app.use(cookieparser('secret_family_recipe'))
     app.use(cors())
-    const distPath = Path.resolve(global.appRoot, '/client/dist')
+
+    app.use(async (req, res, next) => {
+      if (req.path.startsWith('/_nuxt') || req.path.startsWith('/auth') || req.path.startsWith('favicon')) {
+        return next()
+      }
+
+      // Check auth cookie
+      if (!this.user && req.signedCookies.user) {
+        this.user = await this.database.getAuth(req)
+        if (!this.user) {
+          console.error('Invalid signed cookie')
+          res.cookie('user', '', { signed: true, maxAge: 0 })
+        } else {
+          console.log('Got auth', this.user.username)
+        }
+      } else if (this.user && !req.signedCookies.user) {
+        console.log('Cookie cleared, remove user')
+        this.user = null
+      }
+
+      if (req.path.startsWith('/login')) {
+        if (this.user) {
+          return res.redirect('/')
+        } else if (this.database.isPasswordless && !req.query.nopass) {
+          return res.redirect('/login?nopass=1')
+        } else if (!this.database.isPasswordless && req.query.nopass) {
+          return res.redirect('/login')
+        }
+      } else if (!this.user) {
+        return res.redirect('/login')
+      } else if (req.path.startsWith('/launch')) {
+        if (this.isInitialized) {
+          return res.redirect('/')
+        }
+      } else if (!this.isInitialized) {
+        return res.redirect('/launch')
+      }
+      next()
+    })
+
+    console.log('App Root', global.appRoot)
+    const distPath = Path.join(global.appRoot, '/client/dist')
+    console.log('Dist Path', distPath)
     app.use(express.static(distPath))
     app.use(express.static(this.PhotoPath))
     app.use(express.static(this.ThumbnailPath))
@@ -112,6 +157,11 @@ class Server {
       var stats = await this.scanner.getStatRequest(req.params.id)
       res.json(stats)
     })
+    app.get('/auth', async (req, res) => {
+      var response = await this.database.getAuth(req, res)
+      res.json(response)
+    })
+    app.post('/auth', (req, res) => this.database.checkAuth(req, res))
     app.get('/test', (req, res) => {
       console.log('Test request')
       res.json({
@@ -150,7 +200,8 @@ class Server {
         isInitialized: this.isInitialized,
         photoPath: this.PhotoPath,
         thumbnailPath: this.ThumbnailPath,
-        configPath: this.ConfigPath
+        configPath: this.ConfigPath,
+        user: this.user
       })
 
       socket.on('start_init', this.init.bind(this))

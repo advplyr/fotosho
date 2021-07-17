@@ -1,3 +1,5 @@
+import pkg from './package.json'
+
 export default {
   // Disable server-side rendering: https://go.nuxtjs.dev/ssr-mode
   ssr: false,
@@ -5,6 +7,10 @@ export default {
   env: {
     serverUrl: process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3333',
     baseUrl: process.env.BASE_URL || 'http://0.0.0.0'
+  },
+
+  publicRuntimeConfig: {
+    version: pkg.version
   },
 
   // Global page headers: https://go.nuxtjs.dev/config-head

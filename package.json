@@ -1,6 +1,6 @@
 {
   "name": "fotosho",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Fotosho is a photo gallery for your home server",
   "private": false,
   "author": "advplyr",
@@ -9,7 +9,9 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "chokidar": "^3.5.2",
+    "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
     "exif-reader": "^1.0.3",
     "express": "^4.17.1",
