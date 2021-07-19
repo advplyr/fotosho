@@ -194,7 +194,7 @@ export default {
       }
 
       if (!reset && this.fetchingStart === start && query === this.requestQuery) {
-        console.error('Already fetching start', this.fetchingStart, this.requestQuery)
+        // console.error('Already fetching start', this.fetchingStart, this.requestQuery)
         return
       }
       this.fetchingStart = start
@@ -203,11 +203,10 @@ export default {
       this.requestQuery = query
       var uri = `${process.env.serverUrl}/photos?s=${start}&qty=${this.numPhotosToFetch}&${query}`
 
-      console.log('REQUEST PHOTOS', start, 'Should Reset?', reset)
+      // console.log('REQUEST PHOTOS', start, 'Should Reset?', reset)
       this.$axios
         .$get(uri)
         .then((res) => {
-          console.log('RES', res)
           if (!res.photos.length) {
             this.hasLoadedAll = true
           }

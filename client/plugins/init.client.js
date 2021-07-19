@@ -1,8 +1,6 @@
 import Vue from 'vue'
 Vue.prototype.$isDev = process.env.NODE_ENV !== 'production'
 
-console.log('>>> Init plugin', process.server)
-
 Vue.prototype.$bytesPretty = (bytes, decimals = 2) => {
   if (bytes === 0) {
     return '0 Bytes'

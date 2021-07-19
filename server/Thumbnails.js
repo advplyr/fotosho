@@ -140,7 +140,7 @@ class Thumbnails {
       generated += results.generated
       existed += results.existed
       failed += results.failed
-      console.log(`Chunk ${i} Complete: ${results.generated} Generated|${results.existed} Existed|${results.failed} Failed`)
+      console.log(`Chunk ${i}: Complete: ${results.generated} Generated|${results.existed} Existed|${results.failed} Failed`)
       if (results.generated > 0 || results.existed > 0) {
         await this.database.save()
       }

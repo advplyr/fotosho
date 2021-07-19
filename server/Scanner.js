@@ -128,6 +128,10 @@ class Scanner extends EventEmitter {
 
   async scanThumbnails() {
     var thumbs_in_dir = await getAllImages(this.ThumbnailPath)
+    if (!thumbs_in_dir) {
+      console.error('Failed to scan thumbnails')
+      return
+    }
     var thumb_paths_in_dir = thumbs_in_dir.map(p => p.path)
 
     var removed_thumbs = 0
@@ -148,6 +152,7 @@ class Scanner extends EventEmitter {
     if (removed_thumbs > 0) {
       await this.database.save()
     }
+    console.log(`[SCAN] Thumb scan complete. ${photos_needing_thumb.length} photos need thumbs. ${removed_thumbs} thumbs no longer needed.`)
   }
 
   async scanFile(path, fullPath) {

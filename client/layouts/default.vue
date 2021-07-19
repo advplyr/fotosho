@@ -16,11 +16,6 @@
 </template>
 
 <script>
-if (process.client) {
-  require('../plugins/init.client')
-  console.log('REUQIRED CLIENT PLUG')
-}
-
 export default {
   data() {
     return {

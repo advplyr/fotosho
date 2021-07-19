@@ -71,6 +71,7 @@ class Server {
   }
 
   async init() {
+    console.log('[SERVER] Starting Scan...')
     this.scanner.on('scan_progress', data => {
       this.io.emit('scan_progress', data)
     })
@@ -82,6 +83,7 @@ class Server {
     this.isInitialized = true
     this.emitter('scan_complete')
 
+    console.log('[SERVER] Scan complete - start thumb generation.')
     this.thumbnails.checkGenerateThumbnails()
 
     // if (process.env.NODE_ENV === 'production') {
@@ -202,14 +204,16 @@ class Server {
     })
 
     this.io.on('connection', (socket) => {
-      console.log('Socket Connected', socket.id)
       this.clients[socket.id] = {
         id: socket.id,
         socket,
+        user: this.user,
+        username: this.user ? this.user.username : 'nobody',
         connected_at: Date.now()
       }
+      console.log('[SOCKET] Socket Connected', socket.id)
       var photosGrouped = this.gallery.getPhotosSortedFiltered({}, null, null)
-      socket.emit('init', {
+      const initialPayload = {
         albums: this.albums,
         settings: this.settings,
         scanning: this.isScanning,
@@ -219,7 +223,9 @@ class Server {
         thumbnailPath: this.ThumbnailPath,
         configPath: this.ConfigPath,
         user: this.user
-      })
+      }
+      console.log('Emit initial payload to socket: ' + JSON.stringify(initialPayload))
+      socket.emit('init', initialPayload)
 
       socket.on('start_init', this.init.bind(this))
       socket.on('add_to_album', (data) => this.gallery.addToAlbum(socket, data))
@@ -228,6 +234,16 @@ class Server {
       socket.on('delete_album', (data) => this.gallery.deleteAlbum(socket, data))
       socket.on('rename_photo', (data) => this.gallery.renamePhoto(socket, data))
       socket.on('update_settings', (data) => this.updateSettings(socket, data))
+
+      socket.on('disconnect', () => {
+        var _client = this.clients[socket.id]
+        if (!_client) {
+          console.warn('[SOCKET] Socket disconnect, no client ' + socket.id)
+        } else {
+          console.log('[SOCKET] Socket disconnect from client "' + _client.username + '" ' + socket.id)
+          delete this.clients[socket.id]
+        }
+      })
     })
   }
 
