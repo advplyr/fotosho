@@ -127,6 +127,7 @@ class Database {
 
   async checkAuth(req, res) {
     var username = req.body.username
+    console.log('Check Auth', username, !!req.body.password)
 
     var matchingUser = this.users.find(u => u.username === username)
     if (!matchingUser) {
@@ -138,13 +139,15 @@ class Database {
     delete cleanedUser.pash
 
     // check for empty password (default)
-    if (!req.body.password) {
-      if (matchingUser.pash === '') {
+    if (!req.body.password || req.body.password === '') {
+      console.log('Req no pass')
+      if (!matchingUser.pash || matchingUser.pash === '') {
         res.cookie('user', username, { signed: true })
         return res.json({
           user: cleanedUser
         })
       } else {
+        console.log('Matching user pash not empty', matchingUser.pash)
         return res.json({
           error: 'Invalid Password'
         })
@@ -152,7 +155,7 @@ class Database {
     }
 
     // Set root password first time
-    if (matchingUser.type === 'root' && matchingUser.pash === '') {
+    if (matchingUser.type === 'root' && matchingUser.pash === '' && req.body.password && req.body.password.length > 1) {
       var pw = await this.hashPass(req.body.password)
       if (!pw) {
         return res.json({

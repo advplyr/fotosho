@@ -24,14 +24,8 @@ class Gallery {
   getPhotosSortedFiltered(filters, orderBy, orderDesc) {
     var groupedPhotos = []
     this.photos.forEach((photo) => {
-      var findMatch = groupedPhotos.find(p => p.size === photo.size && p.basename === photo.basename)
-      if (findMatch) {
-        findMatch.numCopies++
-      } else {
-        groupedPhotos.push({ ...photo, numCopies: 1 })
-      }
+      groupedPhotos.push({ ...photo })
     })
-    // console.log('Grouped Photos', groupedPhotos.length)
 
     if (orderBy) {
       groupedPhotos.sort((a, b) => {

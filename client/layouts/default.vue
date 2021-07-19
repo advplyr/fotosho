@@ -3,6 +3,7 @@
     <div v-if="!isReady" class="w-full h-full flex items-center justify-center fixed top-0 left-0 bg-bg">
       <div>
         <p class="text-2xl text-center mb-2">Waiting for socket connection...</p>
+        <p v-if="isConnected" class="text-center text-error text-lg mb-2">Socket connected but initial data not set</p>
         <p v-if="reconnectionAttempt" class="text-center text-lg">Reconnection Attempt: {{ reconnectionAttempt }}</p>
       </div>
     </div>
@@ -41,21 +42,27 @@ export default {
       console.log('Socket Connected', this.socket.id)
       this.isConnected = true
     },
+    connectError(err) {
+      console.log('Socket connect error', err)
+    },
     disconnect() {
       console.log('Socket Disconnected')
       this.isConnected = false
     },
     reconnecting(num) {
+      console.log('Socket Reconnecting..', num)
       this.isReconnecting = true
       this.reconnectionAttempt = num
     },
     reconnect() {
       this.isReconnecting = false
     },
-    reconnectError() {
+    reconnectError(err) {
+      console.error('Socket reconnect error', err)
       this.isReconnecting = false
     },
     reconnectFailed() {
+      console.error('Socket reconnect failed')
       this.isReconnecting = false
     },
     initialData(data) {
@@ -71,11 +78,14 @@ export default {
       this.socket = this.$nuxtSocket({
         name: process.env.NODE_ENV === 'development' ? 'dev' : 'prod',
         persist: 'main',
-        teardown: true
+        teardown: true,
+        transports: ['websocket'],
+        upgrade: false
       })
       this.$root.socket = this.socket
 
       this.socket.on('connect', this.connect)
+      this.socket.on('connect_error', this.connectError)
       this.socket.on('disconnect', this.disconnect)
       this.socket.on('reconnecting', this.reconnecting)
       this.socket.on('reconnect', this.reconnect)

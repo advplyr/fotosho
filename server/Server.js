@@ -211,7 +211,7 @@ class Server {
         username: this.user ? this.user.username : 'nobody',
         connected_at: Date.now()
       }
-      console.log('[SOCKET] Socket Connected', socket.id)
+      console.log('[SOCKET] Socket Connected @' + Date.now(), socket.id)
       var photosGrouped = this.gallery.getPhotosSortedFiltered({}, null, null)
       const initialPayload = {
         albums: this.albums,
@@ -240,7 +240,8 @@ class Server {
         if (!_client) {
           console.warn('[SOCKET] Socket disconnect, no client ' + socket.id)
         } else {
-          console.log('[SOCKET] Socket disconnect from client "' + _client.username + '" ' + socket.id)
+          const disconnectTime = Date.now() - _client.connected_at
+          console.log(`[SOCKET] Socket disconnect from client "${_client.username}" after ${disconnectTime}ms @${Date.now()}` + socket.id)
           delete this.clients[socket.id]
         }
       })

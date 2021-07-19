@@ -43,6 +43,7 @@ export const mutations = {
     state.isScanning = data.scanning
     state.isInitialized = data.isInitialized
     state.settings = data.settings || {}
+    console.log('Initial Data was set')
   },
   setAutoSlide(state, val) {
     state.settings.auto_slide = val
