@@ -5,8 +5,9 @@
   "private": false,
   "author": "advplyr",
   "scripts": {
-    "dev": "node index.js",
-    "start": "node index.js"
+    "dev": "nodemon --ignore config/ --ignore client/ index.js",
+    "devc": "node index.js",
+    "start": "node index.js arg1"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -27,5 +28,6 @@
     "photos",
     "photoshow",
     "fotosho"
-  ]
+  ],
+  "devDependencies": {}
 }

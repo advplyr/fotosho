@@ -13,7 +13,7 @@
     </div>
     <div class="w-full h-px bg-white bg-opacity-50 mx-auto mt-6 mb-3" />
 
-    <gallery ref="gallery" />
+    <app-gallery ref="gallery" />
   </div>
 </template>
 

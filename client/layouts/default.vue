@@ -7,7 +7,7 @@
       </div>
     </div>
     <div v-else>
-      <appbar :is-connected="isConnected" :is-reconnecting="isReconnecting" />
+      <app-appbar :is-connected="isConnected" :is-reconnecting="isReconnecting" />
       <Nuxt />
       <modal />
       <toaster />
@@ -16,6 +16,11 @@
 </template>
 
 <script>
+if (process.client) {
+  require('../plugins/init.client')
+  console.log('REUQIRED CLIENT PLUG')
+}
+
 export default {
   data() {
     return {
@@ -64,6 +69,7 @@ export default {
         this.$store.commit('user/setUser', data.user)
       }
       this.$store.commit('setInitialData', data)
+
       this.isReady = true
     },
     initializeSocket() {
@@ -80,6 +86,9 @@ export default {
       this.socket.on('reconnect', this.reconnect)
       this.socket.on('reconnect_error', this.reconnectError)
       this.socket.on('reconnect_failed', this.reconnectFailed)
+      this.socket.on('reload', () => {
+        window.location.reload()
+      })
 
       this.socket.on('added_to_album', (data) => {
         this.$store.commit('updateAlbum', data.album)

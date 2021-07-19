@@ -10,6 +10,12 @@ const Scanner = require('./Scanner')
 const Thumbnails = require('./Thumbnails')
 const Watcher = require('./Watcher')
 
+var _Nuxt
+if (process.env.NODE_ENV !== 'production') {
+  _Nuxt = require('../client/node_modules/nuxt')
+}
+console.log('ENV', process.env.NODE_ENV)
+
 class Server {
   constructor(PORT, CONFIG_PATH, PHOTO_PATH, THUMBNAIL_PATH) {
     this.Port = PORT
@@ -51,12 +57,10 @@ class Server {
   async fileAddedUpdated({ path, fullPath }) {
     console.log('[SERVER] FileAddedUpdated', path, fullPath)
     var scanResult = await this.scanner.scanFile(path, fullPath)
-    // console.log('Scan Result', scanResult)
     if (scanResult && scanResult.newPhoto) {
       this.thumbnails.generatePhotoThumbPrev(scanResult.newPhoto)
       this.emitter('new_photo', scanResult.newPhoto)
     }
-    // Update was made
   }
 
   async fileRemoved({ path, fullPath }) {
@@ -70,7 +74,6 @@ class Server {
     this.scanner.on('scan_progress', data => {
       this.io.emit('scan_progress', data)
     })
-
     this.isScanning = true
     this.emitter('scan_start')
     await this.scanner.scan()
@@ -91,9 +94,11 @@ class Server {
 
   async start() {
     console.log('=== Starting Server ===')
+
     await this.database.init()
 
     const app = express()
+
     this.server = http.createServer(app)
 
     app.use(cookieparser('secret_family_recipe'))
@@ -132,46 +137,58 @@ class Server {
         if (this.isInitialized) {
           return res.redirect('/')
         }
-      } else if (!this.isInitialized) {
+      } else if (!this.isInitialized || this.isScanning) {
         return res.redirect('/launch')
       }
       next()
     })
 
-    console.log('App Root', global.appRoot)
-    const distPath = Path.join(global.appRoot, '/client/dist')
-    console.log('Dist Path', distPath)
-    app.use(express.static(distPath))
+    // Static path to generated nuxt
+    if (process.env.NODE_ENV === 'production') {
+      const distPath = Path.join(global.appRoot, '/client/dist')
+      app.use(express.static(distPath))
+    }
+
     app.use(express.static(this.PhotoPath))
     app.use(express.static(this.ThumbnailPath))
     app.use(express.urlencoded({ extended: true }));
     app.use(express.json())
 
-    app.get('/', (req, res) => {
-      res.sendFile('/index.html')
-    })
-    app.get('/albums/:id', (req, res) => {
-      res.sendFile('/index.html')
-    })
-    app.get('/stats/:id', async (req, res) => {
-      var stats = await this.scanner.getStatRequest(req.params.id)
-      res.json(stats)
-    })
+    if (process.env.NODE_ENV === 'production') {
+      app.get('/', (req, res) => {
+        res.sendFile('/index.html')
+      })
+      app.get('/albums/:id', (req, res) => {
+        res.sendFile('/index.html')
+      })
+    }
+
     app.get('/auth', async (req, res) => {
       var response = await this.database.getAuth(req, res)
       res.json(response)
     })
     app.post('/auth', (req, res) => this.database.checkAuth(req, res))
-    app.get('/test', (req, res) => {
-      console.log('Test request')
-      res.json({
-        success: true
-      })
-    })
+    app.get('/logout', this.logout.bind(this))
     app.get('/photos', (req, res) => this.gallery.fetch(req, res))
     app.get('/photo/:id', (req, res) => this.gallery.downloadPhoto(req, res))
     app.get('/album/photo/:id', (req, res) => this.gallery.getAlbumCover(req, res))
     app.get('/slideshow/photo/:index', (req, res) => this.gallery.getPhotoByIndex(req, res))
+
+    if (process.env.NODE_ENV !== 'production') { // To use HMR for client site in development
+      const config = require('../client/nuxt.config.js')
+      const nuxt = new _Nuxt.Nuxt(config)
+      nuxt.hook('build:compiled', () => {
+        console.log('Compiled.. hot reload client')
+        // Temp: forcing page refresh on client because components are not registering in HMR api
+        this.emitter('reload')
+      })
+
+      if (config.dev) {
+        console.log('Config dev set')
+        new _Nuxt.Builder(nuxt).build()
+      }
+      app.use(nuxt.render)
+    }
 
     this.server.listen(this.Port, this.Host, () => {
       console.log(`Running on http://${this.Host}:${this.Port}`)
@@ -212,6 +229,12 @@ class Server {
       socket.on('rename_photo', (data) => this.gallery.renamePhoto(socket, data))
       socket.on('update_settings', (data) => this.updateSettings(socket, data))
     })
+  }
+
+  logout(req, res) {
+    res.cookie('user', '', { signed: true, maxAge: 0 })
+    this.user = null
+    res.sendStatus(200)
   }
 
   async stop() {

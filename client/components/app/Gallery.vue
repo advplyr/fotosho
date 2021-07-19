@@ -207,6 +207,7 @@ export default {
       this.$axios
         .$get(uri)
         .then((res) => {
+          console.log('RES', res)
           if (!res.photos.length) {
             this.hasLoadedAll = true
           }

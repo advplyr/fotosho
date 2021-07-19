@@ -1,6 +1,6 @@
 <template>
   <div class="wrapper overflow-y-auto p-6 bg-bg">
-    <gallery ref="gallery" :album-id="albumId" />
+    <app-gallery ref="gallery" :album-id="albumId" />
   </div>
 </template>
 

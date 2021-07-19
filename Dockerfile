@@ -13,6 +13,6 @@ COPY index.js index.js
 COPY package.json package.json
 COPY server server
 COPY static static
-RUN npm install
+RUN npm install --production
 EXPOSE 80
 CMD ["node", "index.js"]

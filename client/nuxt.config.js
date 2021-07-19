@@ -1,13 +1,17 @@
-import pkg from './package.json'
+const pkg = require('./package.json')
 
-export default {
+module.exports = {
   // Disable server-side rendering: https://go.nuxtjs.dev/ssr-mode
   ssr: false,
-
+  target: 'static',
+  dev: process.env.NODE_ENV !== 'production',
   env: {
-    serverUrl: process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3333',
+    // serverUrl: process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3333',
+    serverUrl: '',
     baseUrl: process.env.BASE_URL || 'http://0.0.0.0'
   },
+  rootDir: process.env.NODE_ENV !== 'production' ? 'client/' : '',
+  telemetry: false,
 
   publicRuntimeConfig: {
     version: pkg.version
@@ -36,7 +40,7 @@ export default {
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
-    '@/plugins/init'
+    '@/plugins/init.client.js'
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
@@ -78,7 +82,7 @@ export default {
     }
   },
   server: {
-    port: process.env.NODE_ENV === 'production' ? 80 : 3000,
+    port: process.env.NODE_ENV === 'production' ? 80 : 3333,
     host: process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost'
   }
 }

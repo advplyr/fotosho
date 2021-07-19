@@ -28,7 +28,8 @@
       </div>
       <div v-else class="flex items-center">
         <p>v{{ $config.version }}</p>
-        <p class="text-lg pl-4 underline font-semibold">{{ username }}</p>
+        <!-- <p class="text-lg pl-4 underline font-semibold">{{ username }}</p> -->
+        <ui-menu :label="username" :items="userMenuItems" class="ml-4 w-24" @action="menuAction" />
       </div>
     </div>
   </div>
@@ -41,6 +42,18 @@ export default {
     isReconnecting: Boolean
   },
   computed: {
+    userMenuItems() {
+      return [
+        // {
+        //   text: 'Settings',
+        //   value: 'settings'
+        // },
+        {
+          text: 'Logout',
+          value: 'logout'
+        }
+      ]
+    },
     user() {
       return this.$store.state.user.user
     },
@@ -72,6 +85,14 @@ export default {
     }
   },
   methods: {
+    menuAction(action) {
+      if (action === 'logout') {
+        this.$axios.$get(`${process.env.serverUrl}/logout`).then(() => {
+          console.log('Logged out')
+          window.location.reload()
+        })
+      }
+    },
     cancelSelection() {
       this.$store.commit('cancelSelection')
     },
