@@ -1,7 +1,7 @@
 <template>
   <div v-if="show" class="fixed z-30 top-0 left-0 right-0 bottom-0 w-screen h-screen bg-black bg-opacity-95 flex items-center justify-center" @click.stop="show = false">
     <div class="absolute top-4 right-4 w-14 h-14 text-white hover:text-gray-300 cursor-pointer rounded-full p-2">
-      <icon icon="close" />
+      <ui-icon icon="close" />
     </div>
     <div class="w-full max-w-lg h-full max-h-80 rounded-xl shadow-2xl p-4 bg-bg border border-white border-opacity-20" @click.stop>
       <div class="w-full h-full flex max-w-full">
@@ -9,11 +9,11 @@
           <img :src="thumbSrc" class="mb-1 w-full" />
           <div class="flex items-center justify-around mb-2">
             <p class="font-mono text-center">{{ photoSize }}</p>
-            <icon-btn icon="download" :size="7" :padding="1" @click="downloadPhoto" />
+            <<ui-icon-btn icon="download" :size="7" :padding="1" @click="downloadPhoto" />
           </div>
           <div class="flex flex-col">
-            <!-- <btn class="bg-info hover:bg-blue-500 text-sm w-full mb-1" @click="deletePhoto">Move Photo</btn> -->
-            <!-- <btn class="bg-error hover:bg-red-600 text-sm w-full" @click="deletePhoto">Delete Photo</btn> -->
+            <!-- <ui-btn class="bg-info hover:bg-blue-500 text-sm w-full mb-1" @click="deletePhoto">Move Photo</ui-btn> -->
+            <!-- <ui-btn class="bg-error hover:bg-red-600 text-sm w-full" @click="deletePhoto">Delete Photo</ui-btn> -->
           </div>
         </div>
         <div class="h-full px-4 w-3/4">
@@ -43,7 +43,7 @@
             </div>
           </form>
           <div v-else-if="selectedAlbum" class="w-full my-2 flex">
-            <btn class="w-full bg-info text-center" @click="addToAlbum">Add to Album</btn>
+            <ui-btn class="w-full bg-info text-center" @click="addToAlbum">Add to Album</ui-btn>
           </div>
         </div>
       </div>

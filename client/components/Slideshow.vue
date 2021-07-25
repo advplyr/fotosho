@@ -10,7 +10,7 @@
     </div>
 
     <div v-show="!hideOverlay" class="transition-opacity">
-      <icon-btn icon="arrowLeft" class="absolute top-4 left-4 z-20" @click.stop.prevent="show = false" />
+      <<ui-icon-btn icon="arrowLeft" class="absolute top-4 left-4 z-20" @click.stop.prevent="show = false" />
 
       <div class="absolute left-20 top-6 flex items-center justify-center flex-col">
         <p class="text-2xl font-mono font-medium">{{ selectedPhotoIndex + 1 }} of {{ numPhotos }}</p>
@@ -18,7 +18,7 @@
 
       <!-- <div class="absolute top-4 right-4 flex items-center justify-center pointer-events-none z-20">
         <div class="h-14 w-14 p-2 text-white hover:text-gray-200 bg-white bg-opacity-0 hover:bg-opacity-10 rounded-full pointer-events-auto cursor-pointer shadow-xl" @click.stop.prevent="show = false">
-          <icon icon="close" />
+          <ui-icon icon="close" />
         </div>
       </div> -->
 
@@ -41,17 +41,15 @@
             <div class="select-none">Auto Slide</div>
           </label>
 
-          <icon-btn icon="image" :class="showOriginal ? 'text-warning' : 'text-success'" @click="toggleIsOriginal" />
-          <icon-btn icon="pencil" :size="10" :padding="1.5" @click="editClick" />
-          <icon-btn icon="download" @click="downloadClick" />
-          <!-- <icon-btn icon="trash" @click="deleteClick" /> -->
+          <<ui-icon-btn icon="image" :class="showOriginal ? 'text-warning' : 'text-success'" @click="toggleIsOriginal" /> <<ui-icon-btn icon="pencil" :size="10" :padding="1.5" @click="editClick" /> <<ui-icon-btn icon="download" @click="downloadClick" />
+          <!-- <<ui-icon-btn icon="trash" @click="deleteClick" /> -->
         </div>
       </div>
 
       <div class="absolute top-0 left-0 bottom-0 h-full w-1/3 bg-transparent opacity-0 hover:opacity-100 transition-opacity z-10 cursor-pointer" @click.stop.prevent="goPrevImage">
         <div class="absolute top-0 bottom-0 left-8 flex items-center justify-center pointer-events-none">
           <div class="h-20 w-20 p-2 text-white hover:text-gray-400 rounded-full pointer-events-auto cursor-pointer shadow-xl">
-            <icon icon="chevronLeft" />
+            <ui-icon icon="chevronLeft" />
           </div>
         </div>
       </div>
@@ -59,7 +57,7 @@
       <div class="absolute top-0 right-0 bottom-0 h-full w-1/3 bg-transparent opacity-0 hover:opacity-100 transition-opacity z-10 cursor-pointer" @click.stop.prevent="goNextImage">
         <div class="absolute top-0 bottom-0 right-8 flex items-center justify-center pointer-events-none">
           <div class="h-20 w-20 p-2 text-white hover:text-gray-400 rounded-full pointer-events-auto cursor-pointer shadow-xl">
-            <icon icon="chevronRight" />
+            <ui-icon icon="chevronRight" />
           </div>
         </div>
       </div>

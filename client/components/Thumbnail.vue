@@ -4,16 +4,16 @@
 
     <div v-if="isSocketConnected" class="w-full h-full bg-black absolute top-0 left-0 cursor-pointer" :class="bgClassList" @mouseenter="mouseenter" @mouseleave="mouseleave" @click="clickCard">
       <div class="absolute top-1.5 left-1.5 hover:text-yellowgreen" :class="radioClass" @click.prevent.stop="selectClick">
-        <icon :icon="selected ? 'radioFilled' : 'radioEmpty'" />
+        <ui-icon :icon="selected ? 'radioFilled' : 'radioEmpty'" />
       </div>
       <div ref="star" class="absolute top-1.5 right-1.5 hover:text-yellowgreen" :class="starClass" @click.stop.prevent="clickStar">
-        <icon icon="star" :fill="isStarred ? 'currentColor' : 'none'" :stroke-width="isStarred ? 1 : 2" />
+        <ui-icon icon="star" :fill="isStarred ? 'currentColor' : 'none'" :stroke-width="isStarred ? 1 : 2" />
       </div>
       <div ref="pencil" class="absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen" :class="editClass" @click.stop.prevent="editClicked">
-        <icon icon="pencil" />
+        <ui-icon icon="pencil" />
       </div>
       <!-- <div ref="download" class="w-6 h-6 absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen" :class="downloadClass" @click.stop.prevent="clickDownload">
-        <icon icon="download" />
+        <ui-icon icon="download" />
       </div> -->
       <div v-if="showBasename" class="w-5/6 py-1.5 absolute bottom-0 left-0 right-0 px-1.5" :class="nameClass">
         <p class="truncate text-xs">{{ basename }}</p>

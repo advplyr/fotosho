@@ -1,6 +1,6 @@
 <template>
   <div class="rounded-full bg-white bg-opacity-0 hover:bg-opacity-10 flex items-center justify-center cursor-pointer" :class="`w-${size} h-${size} p-${padding}`" @click.stop.prevent="click">
-    <icon :icon="icon" />
+    <ui-icon :icon="icon" />
   </div>
 </template>
 

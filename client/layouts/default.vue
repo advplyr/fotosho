@@ -11,7 +11,8 @@
       <app-appbar :is-connected="isConnected" :is-reconnecting="isReconnecting" />
       <Nuxt />
       <modal />
-      <toaster />
+      <widgets-toaster />
+      <widgets-status-alert />
     </div>
   </div>
 </template>
@@ -24,8 +25,7 @@ export default {
       socketStatus: null,
       isReconnecting: false,
       isReady: false,
-      reconnectionAttempt: 0,
-      hasChkdRoute: false
+      reconnectionAttempt: 0
     }
   },
   watch: {
@@ -35,11 +35,8 @@ export default {
         this.chkRoute()
       }
     },
-    isInitAndScanned() {
+    isInitialized() {
       this.chkRoute()
-    },
-    routeName() {
-      this.isRedirecting = false
     }
   },
   computed: {
@@ -59,36 +56,23 @@ export default {
     },
     isScanning() {
       return this.$store.state.isScanning
-    },
-    isInitAndScanned() {
-      return this.isInitialized && !this.isScanning
-    },
-    routeName() {
-      return this.$route.name
     }
   },
   methods: {
     // For dev only to mimic server middleware
     chkRoute() {
       if (process.env.NODE_ENV === 'production') return
-      if (this.isRedirecting) {
-        return setTimeout(this.chkRoute, 100)
-      }
       if (!this.user && localStorage.getItem('user')) {
         var _user = JSON.parse(localStorage.getItem('user'))
         this.$store.commit('user/setUser', _user)
         this.$nextTick(this.chkRoute)
         return
       }
-
       if (!this.user) {
-        this.isRedirecting = true
         this.$router.replace('/login')
-      } else if (!this.isInitAndScanned && this.$route.name !== 'launch') {
-        this.isRedirecting = true
+      } else if (!this.isInitialized && this.$route.name !== 'launch') {
         this.$router.replace('/launch')
-      } else if (this.isInitAndScanned && this.$route.name === 'launch') {
-        this.isRedirecting = true
+      } else if (this.isInitialized && this.$route.name === 'launch') {
         this.$router.replace('/')
       }
     },
@@ -127,6 +111,23 @@ export default {
       this.$store.commit('setInitialData', data)
 
       this.isReady = true
+    },
+    scanStart() {
+      this.$store.commit('setIsInitialized', true)
+      this.$store.commit('setIsScanning', true)
+      console.log('Set Scan Start')
+
+      if (this.$route.name === 'launch') {
+        this.$router.push('/')
+      }
+    },
+    scanComplete() {
+      this.$store.commit('setIsScanning', false)
+      console.log('Scan Complete')
+      this.$store.commit('addToast', { text: 'Scan Complete', type: 'success' })
+    },
+    scanProgress(scanProgress) {
+      this.$store.commit('setScanProgress', scanProgress)
     },
     initializeSocket() {
       this.socket = this.$nuxtSocket({
@@ -173,21 +174,13 @@ export default {
       })
       this.socket.on('init', this.initialData)
 
-      this.socket.on('scan_start', () => {
-        this.$store.commit('setIsScanning', true)
-        console.log('Set Scan Start')
-      })
-      this.socket.on('scan_complete', () => {
-        this.$store.commit('setIsInitialized', true)
-        this.$store.commit('setIsScanning', false)
-        console.log('Scan Complete')
-        if (process.env.NODE_ENV === 'production') {
-          window.location.reload()
-        }
-      })
+      this.socket.on('scan_start', this.scanStart)
+      this.socket.on('scan_complete', this.scanComplete)
+      this.socket.on('scan_progress', this.scanProgress)
 
       this.socket.on('generating_thumbnails', (data) => {
         console.log('IsGeneratingThumbnails', data)
+        this.$store.commit('setIsGeneratingThumbnails', data.isGenerating)
       })
       this.socket.on('album_not_found', (data) => {
         this.$store.commit('addToast', { text: `Album ${data} not found`, type: 'error' })

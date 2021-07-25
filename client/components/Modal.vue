@@ -1,7 +1,7 @@
 <template>
   <div v-if="show" class="fixed z-10 top-0 left-0 right-0 bottom-0 w-screen h-screen bg-black bg-opacity-95 flex items-center justify-center" @click.stop="clickBackground">
     <div class="absolute top-4 right-8 w-14 h-14 text-white hover:text-gray-300 cursor-pointer rounded-full p-2">
-      <icon icon="close" />
+      <ui-icon icon="close" />
     </div>
     <div class="w-full max-w-lg h-full max-h-80 rounded-xl shadow-2xl p-4 bg-bg border border-white border-opacity-20" @click.stop>
       <h1 class="text-2xl mb-8">Add to Album</h1>

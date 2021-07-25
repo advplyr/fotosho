@@ -76,11 +76,11 @@ class Server {
       this.io.emit('scan_progress', data)
     })
     this.isScanning = true
+    this.isInitialized = true
     this.emitter('scan_start')
     await this.scanner.scan()
     await this.scanner.scanThumbnails()
     this.isScanning = false
-    this.isInitialized = true
     this.emitter('scan_complete')
 
     Logger.info('[SERVER] Scan complete - start thumb generation.')
@@ -140,7 +140,8 @@ class Server {
         if (this.isInitialized) {
           return res.redirect('/')
         }
-      } else if (!this.isInitialized || this.isScanning) {
+        // } else if (!this.isInitialized || this.isScanning) {
+      } else if (!this.isInitialized) {
         return res.redirect('/launch')
       }
       next()

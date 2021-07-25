@@ -1,12 +1,12 @@
 {
   "name": "fotosho",
-  "version": "1.0.3",
+  "version": "1.0.31",
   "description": "Fotosho is a photo gallery for your home server",
   "private": false,
   "author": "advplyr",
   "scripts": {
     "dev": "node index.js",
-    "start": "node index.js arg1"
+    "start": "node index.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -20,7 +20,6 @@
     "njodb": "^0.4.18",
     "node-dir": "^0.1.17",
     "sharp": "^0.28.3",
-    "simple-json-db": "^1.2.3",
     "socket.io": "^4.1.2"
   },
   "keywords": [

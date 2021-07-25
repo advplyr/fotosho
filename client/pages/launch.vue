@@ -22,7 +22,7 @@
         </tr>
       </table>
 
-      <btn v-if="!isScanning && !hasRequestedInit" class="bg-success" large @click="startInitialScan">Start Scan</btn>
+      <ui-btn v-if="!isScanning && !hasRequestedInit" class="bg-success" large @click="startInitialScan">Start Scan</ui-btn>
       <div v-else-if="isScanning" class="flex justify-center items-center">
         <p class="pr-4 text-2xl">Scanning...</p>
         <svg class="w-10 h-10 animate-spin" viewBox="0 0 24 24">

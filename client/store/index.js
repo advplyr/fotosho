@@ -11,7 +11,9 @@ export const state = () => ({
   toasts: [],
   isScanning: false,
   isInitialized: false,
-  isSocketConnected: false
+  isSocketConnected: false,
+  isGeneratingThumbnails: false,
+  scanProgress: null
 })
 
 export const getters = {
@@ -107,5 +109,11 @@ export const mutations = {
   },
   setSocketConnected(state, val) {
     state.isSocketConnected = val
+  },
+  setScanProgress(state, val) {
+    state.scanProgress = val
+  },
+  setIsGeneratingThumbnails(state, val) {
+    state.isGeneratingThumbnails = val
   }
 }
