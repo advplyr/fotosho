@@ -70,7 +70,7 @@ export default {
   methods: {
     startInitialScan() {
       this.hasRequestedInit = true
-      this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'start_init' })
+      this.$root.socket.emit('start_init')
     }
   },
   mounted() {

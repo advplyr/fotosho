@@ -26,13 +26,18 @@ export default {
       error: null,
       processing: false,
       username: 'root',
-      password: null
+      password: null,
+      ready: false
     }
   },
   watch: {
     user(newVal) {
       if (newVal) {
-        window.location.reload()
+        if (process.env.NODE_ENV !== 'production') {
+          this.$router.replace('/')
+        } else {
+          window.location.reload()
+        }
       }
     }
   },
@@ -57,6 +62,7 @@ export default {
         console.error('Failed', error)
         return false
       })
+      console.log('Auth res', authRes)
       if (!authRes) {
         this.error = 'Unknown Failure'
       } else if (authRes.error) {
@@ -69,6 +75,11 @@ export default {
       }
       this.processing = false
     }
+  },
+  mounted() {
+    setTimeout(() => {
+      this.ready = true
+    }, 2000)
   }
 }
 </script>

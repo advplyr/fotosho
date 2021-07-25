@@ -32,6 +32,9 @@ async function waitPathExists(path, attempts = 0) {
 
 async function generateThumbnail(path, output, thumbSizeObj) {
   // console.log('Generate thumbnail', path)
+  if (!path || !output || !thumbSizeObj) {
+    console.error('Invalid data to generateThumbnail', path, output, thumbSizeObj)
+  }
   const sharpInfo = await runSharp(path, output, thumbSizeObj)
 
   if (!sharpInfo) {

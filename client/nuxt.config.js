@@ -6,11 +6,11 @@ module.exports = {
   target: 'static',
   dev: process.env.NODE_ENV !== 'production',
   env: {
-    // serverUrl: process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3333',
-    serverUrl: '',
+    serverUrl: process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3333',
+    // serverUrl: '',
     baseUrl: process.env.BASE_URL || 'http://0.0.0.0'
   },
-  rootDir: process.env.NODE_ENV !== 'production' ? 'client/' : '',
+  // rootDir: process.env.NODE_ENV !== 'production' ? 'client/' : '',
   telemetry: false,
 
   publicRuntimeConfig: {
@@ -82,7 +82,7 @@ module.exports = {
     }
   },
   server: {
-    port: process.env.NODE_ENV === 'production' ? 80 : 3333,
+    port: process.env.NODE_ENV === 'production' ? 80 : 3000,
     host: process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost'
   }
 }

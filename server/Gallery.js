@@ -1,12 +1,14 @@
 const Path = require('path')
+const FastSort = require('fast-sort')
+const Logger = require('./Logger')
 const { moveFile } = require('./utils/fileHelpers')
 const { stringHash } = require('./utils')
 
 class Gallery {
-  constructor(THUMBNAIL_PATH, database, emitter) {
+  constructor(THUMBNAIL_PATH, db, emitter) {
     this.ThumbnailPath = THUMBNAIL_PATH
     this.emitter = emitter
-    this.database = database
+    this.db = db
 
     this.ThumbnailFormat = 'webp'
 
@@ -15,41 +17,36 @@ class Gallery {
   }
 
   get photos() {
-    return this.database.photos
+    return this.db.photos
   }
   get albums() {
-    return this.database.albums
+    return this.db.albums
   }
 
   getPhotosSortedFiltered(filters, orderBy, orderDesc) {
-    var groupedPhotos = []
-    this.photos.forEach((photo) => {
-      groupedPhotos.push({ ...photo })
-    })
-
+    var _photos = this.photos
     if (orderBy) {
-      groupedPhotos.sort((a, b) => {
-        var valA = a[orderBy]
-        var valB = b[orderBy]
-        if (orderDesc) return valA < valB ? 1 : -1
-        return valB < valA ? 1 : -1
-      })
+      if (orderDesc) {
+        _photos = FastSort.sort(_photos).desc(a => a[orderBy])
+      } else {
+        _photos = FastSort.sort(_photos).asc(a => a[orderBy])
+      }
     }
 
     var album = filters.album || null
     var search = filters.search || null
 
-    groupedPhotos = groupedPhotos.filter(photo => {
-      if (album && !album.photos.includes(photo.id)) {
+    _photos = _photos.filter(photo => {
+      if (album && (!album.photos || !album.photos.includes(photo.id))) {
         return false
       }
-      if (search && !photo.basename.includes(search)) {
+      if (search && (!photo.basename || !photo.basename.includes(search))) {
         return false
       }
       return true
     })
 
-    return groupedPhotos
+    return _photos
   }
 
   getPhotosFromQuery(query) {
@@ -97,14 +94,14 @@ class Gallery {
 
     var id = req.params.id
     var album = this.albums.find(a => String(a.id) === id)
-    if (!album || !album.photos.length) {
+    if (!album || !album.photos || !album.photos.length) {
       return res.sendFile(placeholder)
     }
-    var photos_in_album = this.photos.filter(p => album.photos.includes(p.id))
+    var photos_in_album = this.photos.filter(p => (album.photos && album.photos.includes(p.id)))
     var photo = photos_in_album.find(p => p.thumbPath)
 
     if (!photo) {
-      console.error('No photo has thumbPath')
+      Logger.error('No photo has thumbPath')
       return res.sendFile(placeholder)
     }
     var thumbPath = photo.thumb.fullPath
@@ -115,7 +112,7 @@ class Gallery {
     var photoId = req.params.id
     if (photoId.includes('.jpg')) photoId.replace('.jpg', '')
     var photo = this.photos.find(p => String(p.id) === photoId)
-    console.log('download photo', req.params.id, photo)
+    Logger.info('download photo', req.params.id, photo)
     if (!photo) {
       return res.sendStatus(404)
     }
@@ -123,12 +120,12 @@ class Gallery {
   }
 
   async addToAlbum(socket, data) {
-    console.log('addToAlbum', data)
+    Logger.info('addToAlbum', data)
     var photos = data.photos || [data.photoId]
     var albumId = data.albumId
     var album = this.albums.find(a => a.id === albumId)
     if (!album) {
-      console.error('Album not found', albumId)
+      Logger.error('Album not found', albumId)
       socket.emit('album_not_found', albumId)
       return
     }
@@ -140,7 +137,7 @@ class Gallery {
     }
     var photoObjects = photos_to_add.map(p => this.photos.find(ph => ph.id === p))
     album.photos = album.photos.concat(photos_to_add)
-    await this.database.save()
+    await this.db.updateAlbum(album)
     this.emitter('added_to_album', { photos: photoObjects, album })
   }
 
@@ -148,16 +145,16 @@ class Gallery {
     var photos = data.photos || [data.photoId]
     var newAlbumName = data.albumName
     var newAlbumId = stringHash(newAlbumName)
-    console.log('New Album ID', newAlbumId)
+    Logger.info('New Album ID', newAlbumId)
     var newAlbum = {
       id: newAlbumId,
+      recordType: 'album',
       name: newAlbumName,
       photos: photos,
       created_at: Date.now(),
       created_by: 'unknown'
     }
-    this.albums.push(newAlbum)
-    await this.database.save()
+    this.db.insertAlbum(newAlbum)
 
     var photoObjs = this.photos.filter(p => photos.includes(p.id))
     this.emitter('added_to_album', { photos: photoObjs, album: newAlbum })
@@ -168,19 +165,19 @@ class Gallery {
     var albumId = data.albumId
     var album = this.albums.find(a => String(a.id) === albumId)
     if (!album) {
-      console.error('Album not found', albumId)
+      Logger.error('Album not found', albumId)
       socket.emit('album_not_found', albumId)
       return
     }
 
     var photos_in_album = photos.filter(pid => album.photos.includes(pid))
     if (!photos_in_album.length) {
-      console.error('Photos not in album', photos)
+      Logger.error('Photos not in album', photos)
       return
     }
     var photoObjects = photos_in_album.map(p => this.photos.find(ph => ph.id === p))
     album.photos = album.photos.filter(pid => !photos.includes(pid))
-    await this.database.save()
+    await this.db.updateAlbum(album)
     this.emitter('removed_from_album', { photos: photoObjects, album })
   }
 
@@ -191,16 +188,15 @@ class Gallery {
       return
     }
     albumCopy = { ...albumCopy }
-    this.database.albums = this.database.albums.filter(a => String(a.id) !== albumId)
-    await this.database.save()
+    await this.db.removeAlbum(albumCopy.id)
     this.emitter('album_deleted', { album: albumCopy })
   }
 
   async renamePhoto(socket, { photoId, newName }) {
-    console.log('Rename photo called', photoId, newName)
+    Logger.info('Rename photo called', photoId, newName)
     var photo = this.photos.find(p => String(p.id) === String(photoId))
     if (!photo) {
-      console.log('Photo not found', photoId)
+      Logger.info('Photo not found', photoId)
       socket.emit('photo_not_found', photoId)
       return
     }
@@ -209,7 +205,7 @@ class Gallery {
     var dirname = Path.dirname(photo.fullPath)
     var newFilepath = Path.join(dirname, newBasename)
 
-    console.log('calling move', photo.fullPath, 'to', newFilepath)
+    Logger.info('calling move', photo.fullPath, 'to', newFilepath)
     var successful = await moveFile(photo.fullPath, newFilepath)
     this.emitter('rename_photo_result', {
       photoId: photo.id,

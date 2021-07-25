@@ -8,8 +8,8 @@
       <div class="flex-grow" />
       <!-- <p class="text-sm font-mono leading-4 px-4">{{ totalSizePretty }}</p> -->
       <search-input v-model="search" :processing="isFetching" @change="performSearch" class="mr-2" />
-      <order-select v-model="orderBy" :descending.sync="orderDesc" class="mr-2 w-40" @change="changedOrderBy" />
-      <select-dropdown v-model="cardSize" :items="cardSizes" label="Size" class="w-32" @change="changeCardSize" />
+      <ui-order-select v-model="orderBy" :descending.sync="orderDesc" class="mr-2 w-40" @change="changedOrderBy" />
+      <ui-select-dropdown v-model="cardSize" :items="cardSizes" label="Size" class="w-32" @change="changeCardSize" />
     </div>
 
     <div class="flex flex-wrap justify-center max-w-full">
@@ -239,7 +239,7 @@ export default {
       entries.forEach((entry) => {
         if (entry.isIntersecting && !this.hasLoadedAll) {
           if (this.fetchingStart === this.photos.length) {
-            console.log('Already fetching this start', this.fetchingStart)
+            // console.log('Already fetching this start', this.fetchingStart)
             return
           }
           this.requestPhotos(this.photos.length)

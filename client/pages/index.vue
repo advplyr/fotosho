@@ -15,6 +15,9 @@
 
     <app-gallery ref="gallery" />
   </div>
+  <div v-else class="text-black p-8">
+    <h1>Not Initialized</h1>
+  </div>
 </template>
 
 <script>

@@ -24,7 +24,22 @@ export default {
       socketStatus: null,
       isReconnecting: false,
       isReady: false,
-      reconnectionAttempt: 0
+      reconnectionAttempt: 0,
+      hasChkdRoute: false
+    }
+  },
+  watch: {
+    user: {
+      immediate: true,
+      handler() {
+        this.chkRoute()
+      }
+    },
+    isInitAndScanned() {
+      this.chkRoute()
+    },
+    routeName() {
+      this.isRedirecting = false
     }
   },
   computed: {
@@ -35,9 +50,48 @@ export default {
       set(val) {
         this.$store.commit('setSocketConnected', val)
       }
+    },
+    user() {
+      return this.$store.state.user.user
+    },
+    isInitialized() {
+      return this.$store.state.isInitialized
+    },
+    isScanning() {
+      return this.$store.state.isScanning
+    },
+    isInitAndScanned() {
+      return this.isInitialized && !this.isScanning
+    },
+    routeName() {
+      return this.$route.name
     }
   },
   methods: {
+    // For dev only to mimic server middleware
+    chkRoute() {
+      if (process.env.NODE_ENV === 'production') return
+      if (this.isRedirecting) {
+        return setTimeout(this.chkRoute, 100)
+      }
+      if (!this.user && localStorage.getItem('user')) {
+        var _user = JSON.parse(localStorage.getItem('user'))
+        this.$store.commit('user/setUser', _user)
+        this.$nextTick(this.chkRoute)
+        return
+      }
+
+      if (!this.user) {
+        this.isRedirecting = true
+        this.$router.replace('/login')
+      } else if (!this.isInitAndScanned && this.$route.name !== 'launch') {
+        this.isRedirecting = true
+        this.$router.replace('/launch')
+      } else if (this.isInitAndScanned && this.$route.name === 'launch') {
+        this.isRedirecting = true
+        this.$router.replace('/')
+      }
+    },
     connect() {
       console.log('Socket Connected', this.socket.id)
       this.isConnected = true
@@ -121,10 +175,15 @@ export default {
 
       this.socket.on('scan_start', () => {
         this.$store.commit('setIsScanning', true)
+        console.log('Set Scan Start')
       })
       this.socket.on('scan_complete', () => {
+        this.$store.commit('setIsInitialized', true)
         this.$store.commit('setIsScanning', false)
-        window.location.reload()
+        console.log('Scan Complete')
+        if (process.env.NODE_ENV === 'production') {
+          window.location.reload()
+        }
       })
 
       this.socket.on('generating_thumbnails', (data) => {
@@ -143,7 +202,7 @@ export default {
         this.$store.commit('addToast', { text: `Photo ${data.basename} was removed`, type: 'info' })
       })
       this.socket.on('settings_updated', (data) => {
-        console.log('Settings Saved')
+        // console.log('Settings Saved')
       })
     }
   },

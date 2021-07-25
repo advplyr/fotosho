@@ -4,10 +4,12 @@ global.appRoot = __dirname
 const isDev = process.env.NODE_ENV !== 'production'
 if (isDev) {
   const devEnv = require('./dev').config
+  process.env.NODE_ENV = 'development'
   process.env.PORT = devEnv.Port
   process.env.CONFIG_PATH = devEnv.ConfigPath
   process.env.PHOTO_PATH = devEnv.PhotoPath
   process.env.THUMBNAIL_PATH = devEnv.ThumbnailPath
+  process.env.LOG_LEVEL = 'TRACE'
 }
 
 const PORT = process.env.PORT || 80

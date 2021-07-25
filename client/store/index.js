@@ -19,7 +19,7 @@ export const getters = {
     return state.albums.find(a => String(a.id) === albumId)
   },
   getAlbumsForPhoto: state => photoId => {
-    return state.albums.filter(alb => alb.photos.includes(photoId))
+    return state.albums.filter(alb => (alb.photos && alb.photos.includes(photoId)))
   },
   getIsSelectionMode: state => {
     return state.selectedPhotos.length > 0
@@ -40,10 +40,9 @@ export const mutations = {
     state.photoPath = data.photoPath
     state.thumbnailPath = data.thumbnailPath
     state.configPath = data.configPath
-    state.isScanning = data.scanning
+    state.isScanning = data.isScanning
     state.isInitialized = data.isInitialized
     state.settings = data.settings || {}
-    console.log('Initial Data was set')
   },
   setAutoSlide(state, val) {
     state.settings.auto_slide = val
@@ -102,6 +101,9 @@ export const mutations = {
   },
   setIsScanning(state, val) {
     state.isScanning = val
+  },
+  setIsInitialized(state, val) {
+    state.isInitialized = val
   },
   setSocketConnected(state, val) {
     state.isSocketConnected = val

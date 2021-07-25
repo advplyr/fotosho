@@ -1,13 +1,14 @@
 const Path = require('path')
 const fs = require('fs-extra')
+const Logger = require('./Logger')
 const { msToElapsed, chunker } = require('./utils')
 const { generateThumbnail, thumbnailStats } = require('./utils/thumbnails')
 
 class Thumbnails {
-  constructor(PHOTO_PATH, THUMBNAIL_PATH, database, emitter) {
+  constructor(PHOTO_PATH, THUMBNAIL_PATH, db, emitter) {
     this.PhotoPath = PHOTO_PATH
     this.ThumbnailPath = THUMBNAIL_PATH
-    this.database = database
+    this.db = db
     this.emitter = emitter
 
     this.ThumbnailFormat = 'webp'
@@ -20,10 +21,10 @@ class Thumbnails {
   }
 
   get photos() {
-    return this.database.photos
+    return this.db.photos
   }
   get albums() {
-    return this.database.albums
+    return this.db.albums
   }
 
 
@@ -40,14 +41,14 @@ class Thumbnails {
   async generatePhotoThumbPrev(photo) {
     if (this.isGenThumbPrev) {
       this.pendingGens.push(photo)
-      console.log('Already generating thumb, push pending', photo.id)
+      Logger.info('Already generating thumb, push pending', photo.id)
       return
     }
 
     this.isGenThumbPrev = true
     var genres = await this.generateThumbnails([photo])
     if (genres && genres.generated > 0) {
-      await this.database.save()
+      await this.db.updatePhotos(genres.photosGenerated)
     }
     this.isGenThumbPrev = false
 
@@ -102,7 +103,9 @@ class Thumbnails {
           }
           var photoIndex = photosGenerated.findIndex(p => p.id === photo.id)
           if (photoIndex >= 0) photosGenerated.splice(photoIndex, 1, photo)
-          else photosGenerated.push(photo)
+          else {
+            photosGenerated.push(photo)
+          }
         }
       }
     }))
@@ -110,6 +113,7 @@ class Thumbnails {
       this.emitter('thumbnails_generated', { photos: photosGenerated })
     }
     return {
+      photosGenerated,
       generated,
       failed,
       existed
@@ -119,11 +123,11 @@ class Thumbnails {
   async checkGenerateThumbnails() {
     var photos_no_thumb = this.photos.filter(p => !p.thumbPath)
     if (!photos_no_thumb.length) {
-      console.log('All thumbnails generated')
+      Logger.info('All thumbnails generated')
       return
     }
 
-    console.log('Generating', photos_no_thumb.length, 'Thumbnails')
+    Logger.info('Generating', photos_no_thumb.length, 'Thumbnails')
     this.isGeneratingThumbnails = true
     var generateStart = Date.now()
     this.emitter('generating_thumbnails', { isGenerating: true })
@@ -132,28 +136,28 @@ class Thumbnails {
     var generated = 0
     var existed = 0
     var failed = 0
-    console.log(`Chunks to generate: ${chunked_photos.length}`)
+    Logger.info(`Chunks to generate: ${chunked_photos.length}`)
     for (let i = 0; i < chunked_photos.length; i++) {
       var chunk = chunked_photos[i]
-      console.log(`Chunk ${i}: Generating ${chunk.length} photos`)
+      Logger.info(`Chunk ${i}: Generating ${chunk.length} photos`)
       var results = await this.generateThumbnails(chunk)
       generated += results.generated
       existed += results.existed
       failed += results.failed
-      console.log(`Chunk ${i}: Complete: ${results.generated} Generated|${results.existed} Existed|${results.failed} Failed`)
+      Logger.info(`Chunk ${i}: Complete: ${results.generated} Generated|${results.existed} Existed|${results.failed} Failed`)
       if (results.generated > 0 || results.existed > 0) {
-        await this.database.save()
+        await this.db.updatePhotos(results.photosGenerated)
       }
 
       if (this.forceStopGenerating) {
-        console.error('Forcing stop generating')
+        Logger.error('Forcing stop generating')
         this.forceStopGenerating = false
         break
       }
     }
 
     var elapsed = msToElapsed(Date.now() - generateStart)
-    console.log(`${generated} Thumbnails Generated: ${elapsed}`)
+    Logger.info(`${generated} Thumbnails Generated: ${elapsed}`)
 
     this.isGeneratingThumbnails = false
     this.emitter('generating_thumbnails', { isGenerating: false })

@@ -1,26 +1,27 @@
 const Path = require('path')
 const fs = require('fs-extra')
 const EventEmitter = require('events')
+const Logger = require('./Logger')
 const { getAllImages, getImageStats } = require('./utils/fileHelpers')
 const { msToElapsed } = require('./utils')
 
 class Scanner extends EventEmitter {
-  constructor(PHOTO_PATH, THUMBNAIL_PATH, database) {
+  constructor(PHOTO_PATH, THUMBNAIL_PATH, db) {
     super()
 
     this.PhotoPath = PHOTO_PATH
     this.ThumbnailPath = THUMBNAIL_PATH
-    this.database = database
+    this.db = db
   }
 
   get photos() {
-    return this.database.photos
+    return this.db.photos
   }
   get albums() {
-    return this.database.albums
+    return this.db.albums
   }
   get duplicate_photos() {
-    return this.database.duplicate_photos
+    return this.db.duplicate_photos
   }
 
   async getStatRequest(photoId) {
@@ -66,15 +67,24 @@ class Scanner extends EventEmitter {
     var scan_start = Date.now()
 
     var photos_in_dir = await getAllImages(this.PhotoPath)
-    console.log(`[Scan] ${photos_in_dir.length} Photos in dir - ${msToElapsed(Date.now() - scan_start)}`)
+    Logger.info(`[Scan] ${photos_in_dir.length} Photos in dir - ${msToElapsed(Date.now() - scan_start)}`)
 
     var db_photo_paths = this.photos.map(p => p.path)
     var photo_paths_in_dir = photos_in_dir.map(p => p.path)
 
-    var final_photos = this.photos.filter(p => photo_paths_in_dir.includes(p.path))
+    // Photo IDs that are staying in DB
+    var final_photo_ids = this.photos.filter(p => photo_paths_in_dir.includes(p.path)).map(p => p.id)
+
+    // Photos in DB that are not in the photo directory
+    var photos_to_remove = this.photos.filter(p => !photo_paths_in_dir.includes(p.path))
+
+    // Photos in the directory that are not in the DB
+    var photos_needing_eval = photos_in_dir.filter(p => !db_photo_paths.includes(p.path))
+
+    // Store results of the scan
     var duplicate_photos = []
     var failed_photos = []
-    var photos_needing_eval = photos_in_dir.filter(p => !db_photo_paths.includes(p.path))
+    var photos_to_add = []
 
     // Split into chunks for async scan
     var chunks = this.getScanChunks(photos_needing_eval)
@@ -88,7 +98,7 @@ class Scanner extends EventEmitter {
         var imgStat = await getImageStats(_photo.fullPath)
         if (!imgStat) {
           if (failed_photos.find(__photo => __photo.path === _photo.path)) {
-            console.error('Failed photo already in db', _photo.path)
+            Logger.error('Failed photo already in db', _photo.path)
           } else {
             failed_photos.push(_photo)
           }
@@ -100,10 +110,11 @@ class Scanner extends EventEmitter {
             added_at: Date.now()
           }
 
-          if (final_photos.find(p => p.id === photo.id)) {
+          if (final_photo_ids.includes(photo.id)) {
             duplicate_photos.push(photo)
           } else {
-            final_photos.push(photo)
+            final_photo_ids.push(photo.id)
+            photos_to_add.push(photo)
           }
         }
       }))
@@ -115,44 +126,43 @@ class Scanner extends EventEmitter {
         total: photos_needing_eval.length,
         percent: percentDone
       })
-      console.log(`[Scan] ${num_photos_scanned} of ${photos_needing_eval.length} (${percentDone}) - ${msToElapsed(Date.now() - scan_start)}`)
+      Logger.info(`[Scan] ${num_photos_scanned} of ${photos_needing_eval.length} (${percentDone}) - ${msToElapsed(Date.now() - scan_start)}`)
     }
 
-    console.log(`[Scan] Complete in ${msToElapsed(Date.now() - scan_start)}`)
+    Logger.info(`[Scan] Complete in ${msToElapsed(Date.now() - scan_start)}`)
 
-    this.database.photos = final_photos
-    this.database.duplicate_photos = duplicate_photos
-    this.database.failed_photos = failed_photos
-    await this.database.save()
+    this.db.duplicate_photos = duplicate_photos
+    this.db.failed_photos = failed_photos
+    await this.db.updateFromScan(photos_to_add, photos_to_remove)
   }
 
   async scanThumbnails() {
     var thumbs_in_dir = await getAllImages(this.ThumbnailPath)
     if (!thumbs_in_dir) {
-      console.error('Failed to scan thumbnails')
+      Logger.error('Failed to scan thumbnails')
       return
     }
     var thumb_paths_in_dir = thumbs_in_dir.map(p => p.path)
 
-    var removed_thumbs = 0
     var photos_needing_thumb = []
+    var photo_thumbs_to_remove = []
 
-    this.database.photos = this.database.photos.map(photo => {
+    this.db.photos.forEach(photo => {
       if (photo.thumbPath && thumb_paths_in_dir.includes(photo.thumbPath)) {
         // already exists
       } else if (photo.thumbPath) {
-        photo.thumbPath = null
-        delete photo.thumb
-        removed_thumbs++
+        // thumb does not exist in thumb dir anymore
+        photo_thumbs_to_remove.push(photo)
+        photos_needing_thumb.push(photo)
       } else {
         photos_needing_thumb.push(photo)
       }
       return photo
     })
-    if (removed_thumbs > 0) {
-      await this.database.save()
+    if (photo_thumbs_to_remove.length > 0) {
+      await this.db.removeThumbs(photo_thumbs_to_remove)
     }
-    console.log(`[SCAN] Thumb scan complete. ${photos_needing_thumb.length} photos need thumbs. ${removed_thumbs} thumbs no longer needed.`)
+    Logger.info(`[SCAN] Thumb scan complete. ${photos_needing_thumb.length} photos need thumbs. ${photo_thumbs_to_remove.length} thumbs no longer needed.`)
   }
 
   async scanFile(path, fullPath) {
@@ -160,46 +170,40 @@ class Scanner extends EventEmitter {
     var basename = Path.basename(path, extname)
     var existsInDb = this.photos.find(p => p.path === path)
     if (existsInDb) {
-      console.log('[SCAN-FILE] File already exists in Db')
+      Logger.info('[SCAN-FILE] File already exists in Db')
+      return {
+        success: true
+      }
     }
 
     var imgStat = await getImageStats(fullPath)
     if (!imgStat) {
-      console.error('[SCAN-FILE] Failed to stat')
+      Logger.error('[SCAN-FILE] Failed to stat')
       return false
     }
 
-    var newPhoto = null
-    if (existsInDb) {
-      console.log('[SCAN-FILE] File was modified')
-      for (const key in imgStat) {
-        existsInDb[key] = imgStat[key]
-      }
-      existsInDb.updated_at = Date.now()
-    } else {
-      newPhoto = {
-        id: imgStat.fingerprint,
-        path,
-        fullPath,
-        added_at: Date.now(),
-        ext: extname.toLowerCase().substr(1),
-        basename,
-        ...imgStat
-      }
-
-      if (this.photos.find(p => p.id === imgStat.fingerprint)) {
-        var existsAsDuplicate = this.database.duplicate_photos.find(dupe => dupe.path === newPhoto.path)
-        if (!existsAsDuplicate) {
-          this.database.duplicate_photos.push(newPhoto)
-        } else {
-          existsAsDuplicate.updated_at = Date.now()
-        }
-      } else {
-        this.database.photos.push(newPhoto)
-      }
+    var newPhoto = {
+      id: imgStat.fingerprint,
+      path,
+      fullPath,
+      added_at: Date.now(),
+      ext: extname.toLowerCase().substr(1),
+      basename,
+      ...imgStat
     }
 
-    await this.database.save()
+    if (this.photos.find(p => p.id === imgStat.fingerprint)) {
+      var existsAsDuplicate = this.db.duplicate_photos.find(dupe => dupe.path === newPhoto.path)
+      if (!existsAsDuplicate) {
+        this.db.duplicate_photos.push(newPhoto)
+      } else {
+        existsAsDuplicate.updated_at = Date.now()
+      }
+    } else {
+      await this.db.insertPhoto(newPhoto)
+      Logger.info('[SCANNER] Inserting new photo')
+    }
+
     return {
       success: true,
       newPhoto
@@ -210,14 +214,14 @@ class Scanner extends EventEmitter {
     try {
       await fs.unlink(path)
     } catch (error) {
-      console.error('Failed to unlink photo', path)
+      Logger.error('Failed to unlink photo', path)
     }
   }
 
   async removeFile(path, fullPath) {
     var photo = this.photos.find(p => p.path === path)
     if (!photo) {
-      console.log('[REMOVE-FILE] File not in Db')
+      Logger.info('[SCANNER:REMOVE-FILE] File not in Db')
       return false
     }
     if (photo.thumb) {
@@ -226,9 +230,8 @@ class Scanner extends EventEmitter {
     if (photo.preview) {
       this.unlinkPhoto(photo.preview.fullPath)
     }
-    this.database.photos = this.database.photos.filter(p => p.id !== photo.id)
-    await this.database.save()
-    console.log('[REMOVE-FILE] File removed')
+    await this.db.removePhoto(photo.id)
+    Logger.info('[SCANNER:REMOVE-FILE] File removed')
     return photo
   }
 }

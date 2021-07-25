@@ -1,4 +1,5 @@
 var EventEmitter = require('events')
+var Logger = require('./Logger')
 var chokidar = require('chokidar')
 
 class FolderWatcher extends EventEmitter {
@@ -11,7 +12,7 @@ class FolderWatcher extends EventEmitter {
 
   initWatcher() {
     try {
-      console.log('[WATCHER] Initializing..')
+      Logger.info('[WATCHER] Initializing..')
       this.watcher = chokidar.watch(this.PhotoPath, {
         ignoreInitial: true,
         ignored: /(^|[\/\\])\../, // ignore dotfiles
@@ -21,7 +22,6 @@ class FolderWatcher extends EventEmitter {
           pollInterval: 500
         }
       })
-      const log = console.log.bind(console)
       this.watcher
         .on('add', (path) => {
           this.onNewFile(path)
@@ -30,12 +30,12 @@ class FolderWatcher extends EventEmitter {
         }).on('unlink', path => {
           this.onFileRemoved(path)
         }).on('error', (error) => {
-          log(`Watcher error: ${error}`)
+          Logger.error(`Watcher error: ${error}`)
         }).on('ready', () => {
-          log('[WATCHER] Ready')
+          Logger.info('[WATCHER] Ready')
         })
     } catch (error) {
-      console.log('Chokidar watcher failed', error)
+      Logger.error('Chokidar watcher failed', error)
     }
 
   }
@@ -45,7 +45,7 @@ class FolderWatcher extends EventEmitter {
   }
 
   onNewFile(path) {
-    console.log('FolderWatcher: New File', path)
+    Logger.info('FolderWatcher: New File', path)
     this.emit('file_added', {
       path: path.replace(this.PhotoPath, ''),
       fullPath: path
@@ -53,7 +53,7 @@ class FolderWatcher extends EventEmitter {
   }
 
   onFileRemoved(path) {
-    console.log('FolderWatcher: File Removed', path)
+    Logger.info('FolderWatcher: File Removed', path)
     this.emit('file_removed', {
       path: path.replace(this.PhotoPath, ''),
       fullPath: path
@@ -61,7 +61,7 @@ class FolderWatcher extends EventEmitter {
   }
 
   onFileUpdated(path) {
-    console.log('FolderWatcher: Updated File', path)
+    Logger.info('FolderWatcher: Updated File', path)
     this.emit('file_updated', {
       path: path.replace(this.PhotoPath, ''),
       fullPath: path

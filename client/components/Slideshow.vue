@@ -247,7 +247,7 @@ export default {
           console.warn('LoadingIndex != SelectedPhotoIndex', loadingIndex, this.selectedPhotoIndex)
           return
         }
-        console.log('Recieved photo by index', this.selectedPhotoIndex, photo)
+        // console.log('Recieved photo by index', this.selectedPhotoIndex, photo)
 
         photo.index = this.selectedPhotoIndex
         photo.previewSrc = photo.previewPath ? `${process.env.serverUrl}${photo.previewPath}` : null
@@ -269,7 +269,6 @@ export default {
 
         this.loadedPhotos.push(photo)
       } else {
-        console.log('Found photo', photo)
         if (!this.showOriginal && !photo.previewSrc) {
           this.showOriginal = true
         }
@@ -277,7 +276,6 @@ export default {
       }
 
       if (this.$refs.img) {
-        console.log('Setting Img Src', src)
         this.$refs.img.src = src
       } else {
         console.error('No Img Ref', ticks)
@@ -300,7 +298,6 @@ export default {
       }
     },
     editClick() {
-      console.log('editClick')
       this.$emit('edit', this.photo)
     },
     downloadClick() {
@@ -309,7 +306,6 @@ export default {
     },
     deleteClick() {},
     autoCheckboxChanged() {
-      console.log('Auto checkbox', this.auto)
       if (this.auto) {
         this.startAutoSlider()
       } else {

@@ -135,19 +135,18 @@ class Database {
         error: 'User not found'
       })
     }
+
     var cleanedUser = { ...matchingUser }
     delete cleanedUser.pash
 
     // check for empty password (default)
-    if (!req.body.password || req.body.password === '') {
-      console.log('Req no pass')
-      if (!matchingUser.pash || matchingUser.pash === '') {
+    if (!req.body.password) {
+      if (!matchingUser.pash) {
         res.cookie('user', username, { signed: true })
         return res.json({
           user: cleanedUser
         })
       } else {
-        console.log('Matching user pash not empty', matchingUser.pash)
         return res.json({
           error: 'Invalid Password'
         })
@@ -155,7 +154,8 @@ class Database {
     }
 
     // Set root password first time
-    if (matchingUser.type === 'root' && matchingUser.pash === '' && req.body.password && req.body.password.length > 1) {
+    if (matchingUser.type === 'root' && !matchingUser.pash && req.body.password && req.body.password.length > 1) {
+      console.log('Set root pash')
       var pw = await this.hashPass(req.body.password)
       if (!pw) {
         return res.json({

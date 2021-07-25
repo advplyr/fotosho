@@ -1,12 +1,11 @@
 {
   "name": "fotosho",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Fotosho is a photo gallery for your home server",
   "private": false,
   "author": "advplyr",
   "scripts": {
-    "dev": "nodemon --ignore config/ --ignore client/ index.js",
-    "devc": "node index.js",
+    "dev": "node index.js",
     "start": "node index.js arg1"
   },
   "dependencies": {
@@ -16,7 +15,9 @@
     "cors": "^2.8.5",
     "exif-reader": "^1.0.3",
     "express": "^4.17.1",
+    "fast-sort": "^3.0.2",
     "fs-extra": "^10.0.0",
+    "njodb": "^0.4.18",
     "node-dir": "^0.1.17",
     "sharp": "^0.28.3",
     "simple-json-db": "^1.2.3",
@@ -28,6 +29,5 @@
     "photos",
     "photoshow",
     "fotosho"
-  ],
-  "devDependencies": {}
+  ]
 }

@@ -5,17 +5,13 @@ const cors = require('cors')
 const cookieparser = require('cookie-parser')
 const SocketIO = require('socket.io')
 const Gallery = require('./Gallery')
-const Database = require('./Database')
 const Scanner = require('./Scanner')
 const Thumbnails = require('./Thumbnails')
 const Watcher = require('./Watcher')
-
-var _Nuxt
-if (process.env.NODE_ENV !== 'production') {
-  _Nuxt = require('../client/node_modules/nuxt')
-}
-console.log('ENV', process.env.NODE_ENV)
-
+const Db = require('./Db')
+const Auth = require('./Auth')
+const Logger = require('./Logger')
+const fs = require('fs-extra')
 class Server {
   constructor(PORT, CONFIG_PATH, PHOTO_PATH, THUMBNAIL_PATH) {
     this.Port = PORT
@@ -24,29 +20,33 @@ class Server {
     this.PhotoPath = PHOTO_PATH
     this.ThumbnailPath = THUMBNAIL_PATH
 
+    fs.ensureDirSync(CONFIG_PATH)
+    fs.ensureDirSync(PHOTO_PATH)
+    fs.ensureDirSync(THUMBNAIL_PATH)
+
     this.watcher = new Watcher(this.PhotoPath)
-    this.database = new Database(this.ConfigPath)
-    this.scanner = new Scanner(this.PhotoPath, this.ThumbnailPath, this.database)
-    this.gallery = new Gallery(this.ThumbnailPath, this.database, this.emitter.bind(this))
-    this.thumbnails = new Thumbnails(this.PhotoPath, this.ThumbnailPath, this.database, this.emitter.bind(this))
+    this.db = new Db(this.ConfigPath)
+    this.auth = new Auth(this.db)
+    this.scanner = new Scanner(this.PhotoPath, this.ThumbnailPath, this.db)
+    this.gallery = new Gallery(this.ThumbnailPath, this.db, this.emitter.bind(this))
+    this.thumbnails = new Thumbnails(this.PhotoPath, this.ThumbnailPath, this.db, this.emitter.bind(this))
 
     this.server = null
     this.io = null
 
     this.clients = {}
-    this.user = null
     this.isScanning = false
     this.isInitialized = false
   }
 
   get photos() {
-    return this.database.photos
+    return this.db.photos
   }
   get albums() {
-    return this.database.albums
+    return this.db.albums
   }
   get settings() {
-    return this.database.settings
+    return this.db.settings
   }
 
   emitter(ev, data) {
@@ -55,7 +55,7 @@ class Server {
   }
 
   async fileAddedUpdated({ path, fullPath }) {
-    console.log('[SERVER] FileAddedUpdated', path, fullPath)
+    Logger.info('[SERVER] FileAddedUpdated', path, fullPath)
     var scanResult = await this.scanner.scanFile(path, fullPath)
     if (scanResult && scanResult.newPhoto) {
       this.thumbnails.generatePhotoThumbPrev(scanResult.newPhoto)
@@ -71,7 +71,7 @@ class Server {
   }
 
   async init() {
-    console.log('[SERVER] Starting Scan...')
+    Logger.info('[SERVER] Starting Scan...')
     this.scanner.on('scan_progress', data => {
       this.io.emit('scan_progress', data)
     })
@@ -83,7 +83,7 @@ class Server {
     this.isInitialized = true
     this.emitter('scan_complete')
 
-    console.log('[SERVER] Scan complete - start thumb generation.')
+    Logger.info('[SERVER] Scan complete - start thumb generation.')
     this.thumbnails.checkGenerateThumbnails()
 
     // if (process.env.NODE_ENV === 'production') {
@@ -95,9 +95,10 @@ class Server {
   }
 
   async start() {
-    console.log('=== Starting Server ===')
+    Logger.info('=== Starting Server ===')
 
-    await this.database.init()
+    await this.db.init()
+    this.auth.init()
 
     const app = express()
 
@@ -107,33 +108,33 @@ class Server {
     app.use(cors())
 
     app.use(async (req, res, next) => {
-      if (req.path.startsWith('/_nuxt') || req.path.startsWith('/auth') || req.path.startsWith('favicon')) {
+      if (process.env.NODE_ENV === 'development' || req.path.startsWith('/_nuxt') || req.path.startsWith('/auth') || req.path.startsWith('favicon')) {
         return next()
       }
 
       // Check auth cookie
-      if (!this.user && req.signedCookies.user) {
-        this.user = await this.database.getAuth(req)
-        if (!this.user) {
-          console.error('Invalid signed cookie')
+      if (!this.auth.user && req.signedCookies.user) {
+        this.auth.user = await this.auth.getAuth(req)
+        if (!this.auth.user) {
+          Logger.error('Invalid signed cookie')
           res.cookie('user', '', { signed: true, maxAge: 0 })
         } else {
-          console.log('Got auth', this.user.username)
+          Logger.info('Got auth', this.auth.user.username)
         }
-      } else if (this.user && !req.signedCookies.user) {
-        console.log('Cookie cleared, remove user')
-        this.user = null
+      } else if (this.auth.user && !req.signedCookies.user) {
+        Logger.info('Cookie cleared, remove user')
+        this.auth.user = null
       }
 
       if (req.path.startsWith('/login')) {
-        if (this.user) {
+        if (this.auth.user) {
           return res.redirect('/')
-        } else if (this.database.isPasswordless && !req.query.nopass) {
+        } else if (this.auth.isPasswordless && !req.query.nopass) {
           return res.redirect('/login?nopass=1')
-        } else if (!this.database.isPasswordless && req.query.nopass) {
+        } else if (!this.auth.isPasswordless && req.query.nopass) {
           return res.redirect('/login')
         }
-      } else if (!this.user) {
+      } else if (!this.auth.user) {
         return res.redirect('/login')
       } else if (req.path.startsWith('/launch')) {
         if (this.isInitialized) {
@@ -156,44 +157,26 @@ class Server {
     app.use(express.urlencoded({ extended: true }));
     app.use(express.json())
 
-    if (process.env.NODE_ENV === 'production') {
-      app.get('/', (req, res) => {
-        res.sendFile('/index.html')
-      })
-      app.get('/albums/:id', (req, res) => {
-        res.sendFile('/index.html')
-      })
-    }
+    app.get('/', (req, res) => {
+      res.sendFile('/index.html')
+    })
+    app.get('/albums/:id', (req, res) => {
+      res.sendFile('/index.html')
+    })
 
     app.get('/auth', async (req, res) => {
-      var response = await this.database.getAuth(req, res)
+      var response = await this.auth.getAuth(req, res)
       res.json(response)
     })
-    app.post('/auth', (req, res) => this.database.checkAuth(req, res))
+    app.post('/auth', (req, res) => this.auth.checkAuth(req, res))
     app.get('/logout', this.logout.bind(this))
     app.get('/photos', (req, res) => this.gallery.fetch(req, res))
     app.get('/photo/:id', (req, res) => this.gallery.downloadPhoto(req, res))
     app.get('/album/photo/:id', (req, res) => this.gallery.getAlbumCover(req, res))
     app.get('/slideshow/photo/:index', (req, res) => this.gallery.getPhotoByIndex(req, res))
 
-    if (process.env.NODE_ENV !== 'production') { // To use HMR for client site in development
-      const config = require('../client/nuxt.config.js')
-      const nuxt = new _Nuxt.Nuxt(config)
-      nuxt.hook('build:compiled', () => {
-        console.log('Compiled.. hot reload client')
-        // Temp: forcing page refresh on client because components are not registering in HMR api
-        this.emitter('reload')
-      })
-
-      if (config.dev) {
-        console.log('Config dev set')
-        new _Nuxt.Builder(nuxt).build()
-      }
-      app.use(nuxt.render)
-    }
-
     this.server.listen(this.Port, this.Host, () => {
-      console.log(`Running on http://${this.Host}:${this.Port}`)
+      Logger.info(`Running on http://${this.Host}:${this.Port}`)
     })
 
     this.io = new SocketIO.Server(this.server, {
@@ -207,24 +190,22 @@ class Server {
       this.clients[socket.id] = {
         id: socket.id,
         socket,
-        user: this.user,
-        username: this.user ? this.user.username : 'nobody',
+        user: this.auth.user,
+        username: this.auth.username,
         connected_at: Date.now()
       }
-      console.log('[SOCKET] Socket Connected @' + Date.now(), socket.id)
-      var photosGrouped = this.gallery.getPhotosSortedFiltered({}, null, null)
+      Logger.info('[SOCKET] Socket Connected', socket.id)
       const initialPayload = {
         albums: this.albums,
         settings: this.settings,
-        scanning: this.isScanning,
-        num_photos: photosGrouped.length,
+        isScanning: this.isScanning,
         isInitialized: this.isInitialized,
+        num_photos: this.db.photos.length,
         photoPath: this.PhotoPath,
         thumbnailPath: this.ThumbnailPath,
         configPath: this.ConfigPath,
-        user: this.user
+        user: this.auth.user
       }
-      console.log('Emit initial payload to socket: ' + JSON.stringify(initialPayload))
       socket.emit('init', initialPayload)
 
       socket.on('start_init', this.init.bind(this))
@@ -234,14 +215,17 @@ class Server {
       socket.on('delete_album', (data) => this.gallery.deleteAlbum(socket, data))
       socket.on('rename_photo', (data) => this.gallery.renamePhoto(socket, data))
       socket.on('update_settings', (data) => this.updateSettings(socket, data))
+      socket.on('test', () => {
+        Logger.info('Socket test received', socket.id)
+      })
 
       socket.on('disconnect', () => {
         var _client = this.clients[socket.id]
         if (!_client) {
-          console.warn('[SOCKET] Socket disconnect, no client ' + socket.id)
+          Logger.warn('[SOCKET] Socket disconnect, no client ' + socket.id)
         } else {
           const disconnectTime = Date.now() - _client.connected_at
-          console.log(`[SOCKET] Socket disconnect from client "${_client.username}" after ${disconnectTime}ms @${Date.now()}` + socket.id)
+          Logger.info(`[SOCKET] Socket ${socket.id} disconnected from client "${_client.username}" after ${disconnectTime}ms`)
           delete this.clients[socket.id]
         }
       })
@@ -250,20 +234,20 @@ class Server {
 
   logout(req, res) {
     res.cookie('user', '', { signed: true, maxAge: 0 })
-    this.user = null
+    this.auth.user = null
     res.sendStatus(200)
   }
 
   async stop() {
     await this.watcher.close()
-    console.log('Watcher Closed')
+    Logger.info('Watcher Closed')
 
     return new Promise((resolve) => {
       this.server.close((err) => {
         if (err) {
-          console.error('Failed to close server', err)
+          Logger.error('Failed to close server', err)
         } else {
-          console.log('Server successfully closed')
+          Logger.info('Server successfully closed')
         }
         resolve()
       })
@@ -272,18 +256,19 @@ class Server {
 
   async updateSettings(socket, data) {
     if (data.order_by) {
-      this.database.settings.order_by = data.order_by
+      this.db.settings.order_by = data.order_by
     }
     if (data.card_size) {
-      this.database.settings.card_size = data.card_size
+      this.db.settings.card_size = data.card_size
     }
     if (data.auto_slide) {
-      this.database.settings.auto_slide = !!data.auto_slide
+      this.db.settings.auto_slide = !!data.auto_slide
     }
     if (data.slide_duration) {
-      this.database.settings.slide_duration = data.slide_duration
+      this.db.settings.slide_duration = data.slide_duration
     }
-    await this.database.save()
+    // await this.database.save()
+    await this.db.updateSettings(this.db.settings)
     socket.emit('settings_updated')
   }
 }

@@ -1,5 +1,5 @@
 <template>
-  <select-dropdown v-model="selected" :items="albumItems" placeholder="Select Album" @change="selectChanged" />
+  <ui-select-dropdown v-model="selected" :items="albumItems" placeholder="Select Album" @change="selectChanged" />
 </template>
 
 <script>
