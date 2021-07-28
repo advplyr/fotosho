@@ -10,8 +10,7 @@ class Db {
     this.UtilsPath = Path.join(CONFIG_PATH, 'utils')
 
     this.photosDb = new njodb.Database(this.PhotosPath)
-    this.utilsDb = new njodb.Database(this.UtilsPath)
-    this.utilsDb.resizeSync(2)
+    this.utilsDb = new njodb.Database(this.UtilsPath, { datastores: 2 })
 
     this.photos = []
     this.duplicate_photos = []
@@ -53,8 +52,6 @@ class Db {
         await fs.remove(OldDbPath)
         await fs.remove(OldAuthPath)
       }
-    } else {
-      Logger.info('Old Db does not exist')
     }
     return false
   }

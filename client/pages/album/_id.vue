@@ -1,6 +1,19 @@
 <template>
-  <div class="wrapper overflow-y-auto p-6 bg-bg">
-    <app-gallery ref="gallery" :album-id="albumId" />
+  <div class="bg-bg">
+    <div class="w-full h-16 flex items-center pr-4 bg-fg bg-opacity-50">
+      <div class="h-full px-8 hover:bg-fg flex items-center justify-center text-center text-2xl border-b-2 cursor-pointer">
+        <span class="pr-2">Photos</span>
+        <div class="rounded-full px-2 py-0.5 font-mono text-sm bg-black bg-opacity-25">
+          <p>{{ numPhotos }}</p>
+        </div>
+      </div>
+
+      <div class="flex-grow" />
+      <search-input v-model="search" @change="performSearch" class="mr-2" />
+      <ui-order-select v-model="orderBy" :descending.sync="orderDesc" class="mr-2 w-40" @change="changedOrderBy" />
+      <ui-select-dropdown v-model="cardSize" :items="cardSizes" label="Size" class="w-32" @change="changeCardSize" />
+    </div>
+    <app-gallery2 ref="gallery" :album-id="albumId" />
   </div>
 </template>
 
@@ -8,7 +21,35 @@
 export default {
   asyncData({ params }) {
     return {
-      albumId: params.id
+      albumId: params.id,
+      cardSizes: [
+        {
+          text: 'X-Small',
+          value: 'xs',
+          height: 80
+        },
+        {
+          text: 'Small',
+          value: 'sm',
+          height: 112
+        },
+        {
+          text: 'Medium',
+          value: 'md',
+          height: 176
+        },
+        {
+          text: 'Large',
+          value: 'lg',
+          height: 240
+        },
+        {
+          text: 'X-Large',
+          value: 'xl',
+          height: 320
+        }
+      ],
+      search: null
     }
   },
   data() {
@@ -23,9 +64,49 @@ export default {
     },
     albumPhotos() {
       return this.album ? this.album.photos || [] : []
+    },
+    numPhotos() {
+      if (this.albumId) return this.album ? this.album.photos.length : 0
+      return this.$store.state.numPhotos
+    },
+    cardSize: {
+      get() {
+        return this.$store.state.settings.card_size
+      },
+      set(val) {
+        this.$store.commit('setCardSize', val)
+        this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'update_settings', msg: { card_size: val } })
+      }
+    },
+    orderBy: {
+      get() {
+        return this.$store.state.settings.order_by
+      },
+      set(val) {
+        this.$store.commit('setOrderBy', val)
+        this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'update_settings', msg: { order_by: val } })
+      }
+    },
+    orderDesc: {
+      get() {
+        return this.$store.state.settings.order_desc
+      },
+      set(val) {
+        this.$store.commit('setOrderDesc', !!val)
+        this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'update_settings', msg: { order_desc: !!val } })
+      }
     }
   },
   methods: {
+    performSearch() {
+      if (this.$refs.gallery) this.$refs.gallery.performSearch(this.search)
+    },
+    changedOrderBy() {
+      if (this.$refs.gallery) this.$refs.gallery.changedOrderBy()
+    },
+    changeCardSize() {
+      if (this.$refs.gallery) this.$refs.gallery.changeCardSize()
+    },
     thumbnailsGenerated(data) {
       if (!this.$refs.gallery) {
         console.error('Invalid gallery not there..')
@@ -76,11 +157,3 @@ export default {
   }
 }
 </script>
-
-<style>
-.wrapper {
-  height: calc(100vh - 64px);
-  max-height: calc(100vh - 64px);
-  width: 100%;
-}
-</style>

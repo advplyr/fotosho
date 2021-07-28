@@ -1,5 +1,5 @@
 <template>
-  <div class="text-white max-h-screen overflow-hidden">
+  <div class="text-white overflow-hidden h-screen">
     <div v-if="!isReady" class="w-full h-full flex items-center justify-center fixed top-0 left-0 bg-bg">
       <div>
         <p class="text-2xl text-center mb-2">Waiting for socket connection...</p>
@@ -7,7 +7,7 @@
         <p v-if="reconnectionAttempt" class="text-center text-lg">Reconnection Attempt: {{ reconnectionAttempt }}</p>
       </div>
     </div>
-    <div v-else>
+    <div v-else class="h-full">
       <app-appbar :is-connected="isConnected" :is-reconnecting="isReconnecting" />
       <Nuxt />
       <modal />

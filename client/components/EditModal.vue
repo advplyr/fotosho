@@ -9,7 +9,7 @@
           <img :src="thumbSrc" class="mb-1 w-full" />
           <div class="flex items-center justify-around mb-2">
             <p class="font-mono text-center">{{ photoSize }}</p>
-            <<ui-icon-btn icon="download" :size="7" :padding="1" @click="downloadPhoto" />
+            <ui-icon-btn icon="download" :size="7" :padding="1" @click="downloadPhoto" />
           </div>
           <div class="flex flex-col">
             <!-- <ui-btn class="bg-info hover:bg-blue-500 text-sm w-full mb-1" @click="deletePhoto">Move Photo</ui-btn> -->

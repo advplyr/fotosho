@@ -1,22 +1,24 @@
 <template>
-  <div class="rounded-xl overflow-hidden cursor-pointer m-1.5 relative border" :class="selected ? 'border-yellowgreen' : 'border-transparent hover:border-gray-300'" :style="{ height: cardHeight + 'rem', width: cardWidth + 'rem', margin: cardMargin + 'rem' }">
-    <img :id="thumbnailId" :src="path" loading="lazy" class="w-full h-full" @error="imgFailed" />
+  <div class="cursor-pointer rounded-xl" :style="{ height: cardHeight + 'rem', width: cardWidth + 'rem', padding: cardMargin + 'rem' }">
+    <div class="rounded-xl w-full h-full relative border overflow-hidden" :class="selected ? 'border-yellowgreen' : 'border-transparent hover:border-gray-300'">
+      <img :id="thumbnailId" :src="path" loading="lazy" class="w-full h-full" @error="imgFailed" />
 
-    <div v-if="isSocketConnected" class="w-full h-full bg-black absolute top-0 left-0 cursor-pointer" :class="bgClassList" @mouseenter="mouseenter" @mouseleave="mouseleave" @click="clickCard">
-      <div class="absolute top-1.5 left-1.5 hover:text-yellowgreen" :class="radioClass" @click.prevent.stop="selectClick">
-        <ui-icon :icon="selected ? 'radioFilled' : 'radioEmpty'" />
-      </div>
-      <div ref="star" class="absolute top-1.5 right-1.5 hover:text-yellowgreen" :class="starClass" @click.stop.prevent="clickStar">
-        <ui-icon icon="star" :fill="isStarred ? 'currentColor' : 'none'" :stroke-width="isStarred ? 1 : 2" />
-      </div>
-      <div ref="pencil" class="absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen" :class="editClass" @click.stop.prevent="editClicked">
-        <ui-icon icon="pencil" />
-      </div>
-      <!-- <div ref="download" class="w-6 h-6 absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen" :class="downloadClass" @click.stop.prevent="clickDownload">
+      <div v-if="isSocketConnected" class="w-full h-full bg-black absolute top-0 left-0 cursor-pointer" :class="bgClassList" @mouseenter="mouseenter" @mouseleave="mouseleave" @click="clickCard">
+        <div class="absolute top-1.5 left-1.5 hover:text-yellowgreen" :class="radioClass" @click.prevent.stop="selectClick">
+          <ui-icon :icon="selected ? 'radioFilled' : 'radioEmpty'" />
+        </div>
+        <div ref="star" class="absolute top-1.5 right-1.5 hover:text-yellowgreen" :class="starClass" @click.stop.prevent="clickStar">
+          <ui-icon icon="star" :fill="isStarred ? 'currentColor' : 'none'" :stroke-width="isStarred ? 1 : 2" />
+        </div>
+        <div ref="pencil" class="absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen" :class="editClass" @click.stop.prevent="editClicked">
+          <ui-icon icon="pencil" />
+        </div>
+        <!-- <div ref="download" class="w-6 h-6 absolute bottom-1.5 right-1.5 z-10 hover:text-yellowgreen" :class="downloadClass" @click.stop.prevent="clickDownload">
         <ui-icon icon="download" />
       </div> -->
-      <div v-if="showBasename" class="w-5/6 py-1.5 absolute bottom-0 left-0 right-0 px-1.5" :class="nameClass">
-        <p class="truncate text-xs">{{ basename }}</p>
+        <div v-if="showBasename" class="w-5/6 py-1.5 absolute bottom-0 left-0 right-0 px-1.5" :class="nameClass">
+          <p class="truncate text-xs">{{ basename }}</p>
+        </div>
       </div>
     </div>
   </div>

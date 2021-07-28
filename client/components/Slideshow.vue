@@ -10,7 +10,7 @@
     </div>
 
     <div v-show="!hideOverlay" class="transition-opacity">
-      <<ui-icon-btn icon="arrowLeft" class="absolute top-4 left-4 z-20" @click.stop.prevent="show = false" />
+      <ui-icon-btn icon="arrowLeft" class="absolute top-4 left-4 z-20" @click.stop.prevent="show = false" />
 
       <div class="absolute left-20 top-6 flex items-center justify-center flex-col">
         <p class="text-2xl font-mono font-medium">{{ selectedPhotoIndex + 1 }} of {{ numPhotos }}</p>
@@ -41,7 +41,7 @@
             <div class="select-none">Auto Slide</div>
           </label>
 
-          <<ui-icon-btn icon="image" :class="showOriginal ? 'text-warning' : 'text-success'" @click="toggleIsOriginal" /> <<ui-icon-btn icon="pencil" :size="10" :padding="1.5" @click="editClick" /> <<ui-icon-btn icon="download" @click="downloadClick" />
+          <ui-icon-btn icon="image" :class="showOriginal ? 'text-warning' : 'text-success'" @click="toggleIsOriginal" /> <ui-icon-btn icon="pencil" :size="10" :padding="1.5" @click="editClick" /> <ui-icon-btn icon="download" @click="downloadClick" />
           <!-- <<ui-icon-btn icon="trash" @click="deleteClick" /> -->
         </div>
       </div>
