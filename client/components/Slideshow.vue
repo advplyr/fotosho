@@ -12,16 +12,17 @@
     <div v-show="!hideOverlay" class="transition-opacity">
       <ui-icon-btn icon="arrowLeft" class="absolute top-4 left-4 z-20" @click.stop.prevent="show = false" />
 
+      <!-- Gradient Top -->
+      <div class="w-full absolute top-0 left-0 right-0 h-20 bg-gradient-to-t from-transparent to-black" />
+
+      <!-- Photo Number -->
       <div class="absolute left-20 top-6 flex items-center justify-center flex-col">
-        <p class="text-2xl font-mono font-medium">{{ selectedPhotoIndex + 1 }} of {{ numPhotos }}</p>
+        <p class="text-xl font-mono font-medium">
+          {{ photoShowingIndex + 1 }} <span class="text-xs">of {{ numPhotos }}</span>
+        </p>
       </div>
 
-      <!-- <div class="absolute top-4 right-4 flex items-center justify-center pointer-events-none z-20">
-        <div class="h-14 w-14 p-2 text-white hover:text-gray-200 bg-white bg-opacity-0 hover:bg-opacity-10 rounded-full pointer-events-auto cursor-pointer shadow-xl" @click.stop.prevent="show = false">
-          <ui-icon icon="close" />
-        </div>
-      </div> -->
-
+      <!-- Photo Path & Size -->
       <div v-show="!loading" class="absolute left-0 bottom-0 py-4 px-6 z-20">
         <div class="flex mb-2">
           <p class="font-mono text-sm mr-4">{{ photoPath }}</p>
@@ -31,21 +32,27 @@
         </div>
       </div>
 
-      <div v-show="!loading" class="absolute right-0 bottom-0 py-4 px-6 z-20">
+      <!-- Top Right Options -->
+      <div v-show="!loading" class="absolute right-0 top-0 py-4 px-6 z-20">
         <div v-if="photo" class="flex items-center">
-          <label class="flex justify-start items-start mr-4" @click.stop>
-            <div class="bg-white border-2 rounded border-gray-400 w-6 h-6 flex flex-shrink-0 justify-center items-center mr-2 focus-within:border-blue-500">
-              <input v-model="auto" type="checkbox" class="opacity-0 absolute" @change="autoCheckboxChanged" />
-              <svg class="fill-current hidden w-4 h-4 text-green-500 pointer-events-none" viewBox="0 0 20 20"><path d="M0 11l2-2 5 5L18 3l2 2L7 18z" /></svg>
-            </div>
-            <div class="select-none">Auto Slide</div>
-          </label>
+          <ui-checkbox v-model="auto" class="mx-2" @input="autoCheckboxChanged">Auto Slide</ui-checkbox>
 
-          <ui-icon-btn icon="image" :class="showOriginal ? 'text-warning' : 'text-success'" @click="toggleIsOriginal" /> <ui-icon-btn icon="pencil" :size="10" :padding="1.5" @click="editClick" /> <ui-icon-btn icon="download" @click="downloadClick" />
+          <ui-select-dropdown v-show="auto" v-model="slideDuration" :items="slideDurationItems" icon="clock" transparent class="w-20" />
+
+          <ui-checkbox v-model="shuffleSlide" class="mx-2" @input="shuffleCheckboxChanged">Shuffle</ui-checkbox>
+
+          <ui-icon-btn icon="pencil" :size="8" :padding="1.5" @click="editClick" />
+          <ui-icon-btn icon="download" @click="downloadClick" :size="9" :padding="1.5" />
           <!-- <<ui-icon-btn icon="trash" @click="deleteClick" /> -->
         </div>
       </div>
 
+      <!-- Toggle Original Image Icon -->
+      <div v-show="!loading" class="absolute right-0 bottom-0 py-4 px-6 z-20">
+        <ui-icon-btn icon="image" :class="showOriginal ? 'text-warning' : 'text-success'" :size="9" :padding="1.5" @click="toggleIsOriginal" />
+      </div>
+
+      <!-- Prev Arrow -->
       <div class="absolute top-0 left-0 bottom-0 h-full w-1/3 bg-transparent opacity-0 hover:opacity-100 transition-opacity z-10 cursor-pointer" @click.stop.prevent="goPrevImage">
         <div class="absolute top-0 bottom-0 left-8 flex items-center justify-center pointer-events-none">
           <div class="h-20 w-20 p-2 text-white hover:text-gray-400 rounded-full pointer-events-auto cursor-pointer shadow-xl">
@@ -54,6 +61,7 @@
         </div>
       </div>
 
+      <!-- Next Arrow -->
       <div class="absolute top-0 right-0 bottom-0 h-full w-1/3 bg-transparent opacity-0 hover:opacity-100 transition-opacity z-10 cursor-pointer" @click.stop.prevent="goNextImage">
         <div class="absolute top-0 bottom-0 right-8 flex items-center justify-center pointer-events-none">
           <div class="h-20 w-20 p-2 text-white hover:text-gray-400 rounded-full pointer-events-auto cursor-pointer shadow-xl">
@@ -84,7 +92,9 @@ export default {
       mousemoveTimeout: null,
       hideOverlay: false,
       auto: false,
-      slideTimeout: null
+      slideTimeout: null,
+      shuffleSlide: false,
+      shuffledPhotoIndexes: []
     }
   },
   watch: {
@@ -101,6 +111,13 @@ export default {
           this.stopAutoSlider()
           this.selectedPhotoIndex = null
         } else if (this.auto) {
+          this.startAutoSlider()
+        }
+      }
+    },
+    slideDuration: {
+      handler(newVal) {
+        if (newVal && this.auto) {
           this.startAutoSlider()
         }
       }
@@ -144,6 +161,19 @@ export default {
         this.$store.commit('setAutoSlide', !!val)
         this.$store.dispatch('$nuxtSocket/emit', { label: 'main', evt: 'update_settings', msg: { auto_slide: !!val } })
       }
+    },
+    slideDurationInSeconds() {
+      return Math.floor(this.slideDuration / 1000)
+    },
+    slideDurationItems() {
+      var items = []
+      for (let i = 2; i < 12; i++) {
+        items.push({
+          text: `${i}s`,
+          value: i * 1000
+        })
+      }
+      return items
     },
     photoId() {
       return this.photo ? this.photo.id : null
@@ -190,9 +220,31 @@ export default {
         return 'w-full'
       }
       return 'h-full'
+    },
+    photoShowingIndex() {
+      return this.shuffleSlide ? this.shuffledPhotoIndexes[this.selectedPhotoIndex] : this.selectedPhotoIndex
     }
   },
   methods: {
+    setRemainingPhotosShuffled() {
+      var shuffledPhotoIndexes = new Array(this.numPhotos)
+      for (let i = 0; i < this.numPhotos; i++) {
+        var ranIndex = Math.floor(Math.random() * i)
+        shuffledPhotoIndexes[ranIndex] = i
+        shuffledPhotoIndexes[i] = ranIndex
+      }
+      var indexOfSelected = shuffledPhotoIndexes.findIndex((p) => p === this.selectedPhotoIndex)
+      var indexAtSelected = shuffledPhotoIndexes[this.selectedPhotoIndex]
+
+      shuffledPhotoIndexes[indexOfSelected] = indexAtSelected
+      shuffledPhotoIndexes[this.selectedPhotoIndex] = this.selectedPhotoIndex
+      this.shuffledPhotoIndexes = shuffledPhotoIndexes
+    },
+    shuffleCheckboxChanged(val) {
+      if (val) {
+        this.setRemainingPhotosShuffled()
+      }
+    },
     toggleIsOriginal() {
       if (!this.photo) {
         return null
@@ -234,20 +286,20 @@ export default {
         return
       }
 
-      var loadingIndex = this.selectedPhotoIndex
+      var photoIndexToShow = this.shuffleSlide ? this.shuffledPhotoIndexes[this.selectedPhotoIndex] : this.selectedPhotoIndex
+      var loadingIndex = photoIndexToShow
       this.loading = true
-      var photo = this.loadedPhotos.find((lp) => lp.index === this.selectedPhotoIndex)
+      var photo = this.loadedPhotos.find((lp) => lp.index === photoIndexToShow)
       var src = null
       if (!photo) {
-        var uri = `${process.env.serverUrl}/slideshow/photo/${this.selectedPhotoIndex}?${this.requestQuery}`
+        var uri = `${process.env.serverUrl}/slideshow/photo/${photoIndexToShow}?${this.requestQuery}`
         photo = await this.$axios.$get(uri)
-        if (loadingIndex !== this.selectedPhotoIndex) {
-          console.warn('LoadingIndex != SelectedPhotoIndex', loadingIndex, this.selectedPhotoIndex)
+        if (loadingIndex !== photoIndexToShow) {
+          console.warn('LoadingIndex != photoIndexToShow', loadingIndex, photoIndexToShow)
           return
         }
-        // console.log('Recieved photo by index', this.selectedPhotoIndex, photo)
 
-        photo.index = this.selectedPhotoIndex
+        photo.index = photoIndexToShow
         photo.previewSrc = photo.previewPath ? `${process.env.serverUrl}${photo.previewPath}` : null
         photo.originalSrc = photo.path ? `${process.env.serverUrl}${photo.path}` : 'Logo.png'
 
@@ -258,8 +310,8 @@ export default {
 
         src = this.showOriginal ? photo.originalSrc : photo.previewSrc
         var img = await this.loadImg(src)
-        if (loadingIndex !== this.selectedPhotoIndex) {
-          console.warn('LoadingIndex != SelectedPhotoIndex', loadingIndex, this.selectedPhotoIndex)
+        if (loadingIndex !== photoIndexToShow) {
+          console.warn('LoadingIndex != photoIndexToShow', loadingIndex, photoIndexToShow)
           return
         }
         photo.width = img.naturalWidth
@@ -281,6 +333,7 @@ export default {
       this.photo = photo
       this.loading = false
     },
+    getRandomPhotoIndex() {},
     goPrevImage() {
       if (this.selectedPhotoIndex === 0) {
         this.selectedPhotoIndex = this.numPhotos - 1
@@ -290,6 +343,7 @@ export default {
     },
     goNextImage() {
       if (this.selectedPhotoIndex === this.numPhotos - 1) {
+        if (this.shuffleSlide) this.setRemainingPhotosShuffled()
         this.selectedPhotoIndex = 0
       } else {
         this.selectedPhotoIndex++
