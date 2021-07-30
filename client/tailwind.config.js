@@ -2,9 +2,17 @@ module.exports = {
   purge: {
     options: {
       safelist: [
+        'w-7',
+        'h-7',
+        'w-8',
+        'h-8',
+        'w-9',
+        'h-9',
         'w-10',
         'h-10',
-        'p-1.5'
+        'p-1',
+        'p-1.5',
+        'p-2'
       ]
     }
   },

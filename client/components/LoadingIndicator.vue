@@ -1,13 +1,13 @@
 <template>
-  <div class="absolute top-0 left-0 w-full h-full bg-black bg-opacity-75 flex items-center justify-center">
-    <div class="bg-white border py-2 px-5 rounded-lg flex items-center flex-col">
+  <div class="absolute top-0 left-0 w-full h-full flex items-start justify-center z-20">
+    <div class="py-6 px-5 rounded-lg flex items-center flex-col">
       <div class="loader-dots block relative w-20 h-5 mt-2">
-        <div class="absolute top-0 mt-1 w-3 h-3 rounded-full bg-green-500"></div>
-        <div class="absolute top-0 mt-1 w-3 h-3 rounded-full bg-green-500"></div>
-        <div class="absolute top-0 mt-1 w-3 h-3 rounded-full bg-green-500"></div>
-        <div class="absolute top-0 mt-1 w-3 h-3 rounded-full bg-green-500"></div>
+        <div class="absolute top-0 mt-1 w-3 h-3 rounded-full" :class="`bg-${dotColor}`"></div>
+        <div class="absolute top-0 mt-1 w-3 h-3 rounded-full" :class="`bg-${dotColor}`"></div>
+        <div class="absolute top-0 mt-1 w-3 h-3 rounded-full" :class="`bg-${dotColor}`"></div>
+        <div class="absolute top-0 mt-1 w-3 h-3 rounded-full" :class="`bg-${dotColor}`"></div>
       </div>
-      <div class="text-gray-500 text-xs font-light mt-2 text-center whitespace-nowrap">Please wait...</div>
+      <div class="text-white text-xs font-light mt-1 text-center whitespace-nowrap">Loading...</div>
     </div>
   </div>
 </template>
@@ -17,7 +17,11 @@ export default {
   data() {
     return {}
   },
-  computed: {},
+  computed: {
+    dotColor() {
+      return 'white'
+    }
+  },
   methods: {},
   mounted() {}
 }

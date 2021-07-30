@@ -3,8 +3,12 @@
     <div class="w-full h-full">
       <div @click.stop.prevent class="h-full w-full relative flex items-center justify-center">
         <img id="slideshowImg" ref="img" :class="photoClass" />
+
+        <transition name="fadebg">
+          <div v-show="loading" class="bg-black opacity-0 w-full h-full absolute top-0 left-0 z-10" />
+        </transition>
         <transition name="fade">
-          <loading-indicator v-show="loading" />
+          <loading-indicator v-show="loading" class="opacity-0" />
         </transition>
       </div>
     </div>
@@ -167,7 +171,7 @@ export default {
     },
     slideDurationItems() {
       var items = []
-      for (let i = 2; i < 12; i++) {
+      for (let i = 2; i < 31; i++) {
         items.push({
           text: `${i}s`,
           value: i * 1000
@@ -290,6 +294,9 @@ export default {
       var loadingIndex = photoIndexToShow
       this.loading = true
       var photo = this.loadedPhotos.find((lp) => lp.index === photoIndexToShow)
+
+      // await new Promise((resolve) => setTimeout(resolve, 1000))
+
       var src = null
       if (!photo) {
         var uri = `${process.env.serverUrl}/slideshow/photo/${photoIndexToShow}?${this.requestQuery}`
@@ -324,14 +331,15 @@ export default {
         }
         src = this.showOriginal ? photo.originalSrc : photo.previewSrc
       }
-
-      if (this.$refs.img) {
-        this.$refs.img.src = src
-      } else {
-        console.error('No Img Ref', ticks)
-      }
-      this.photo = photo
       this.loading = false
+      this.$nextTick(() => {
+        if (this.$refs.img) {
+          this.$refs.img.src = src
+        } else {
+          console.error('No Img Ref', ticks)
+        }
+      })
+      this.photo = photo
     },
     getRandomPhotoIndex() {},
     goPrevImage() {
@@ -410,19 +418,56 @@ export default {
 </script>
 
 <style>
-input:checked + svg {
-  display: block;
-}
 .fade-enter-active {
-  transition: opacity 1s;
+  /* transition: opacity 1s; */
+  animation: fadein 2s;
 }
 .fade-leave-active {
   transition: opacity 0s;
+}
+@keyframes fadein {
+  0% {
+    opacity: 0;
+  }
+  33% {
+    opacity: 0;
+  }
+  34% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 .fade-enter {
   opacity: 0;
 }
 .fade-leave-to {
   opacity: 1;
+}
+
+.fadebg-enter-active {
+  transition: opacity 0s;
+}
+.fadebg-leave-active {
+  animation: fadebgout 0.5s;
+}
+@keyframes fadebgout {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.fadebg-enter {
+  opacity: 0;
+}
+.fadebg-leave-to {
+  opacity: 0.5;
 }
 </style>
